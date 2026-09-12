@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { type ReactNode, useEffect, useState } from "react";
+import { Icon } from "./Icon";
 import { Logo } from "./Logo";
 import { cx } from "./ui";
 
@@ -46,17 +47,21 @@ export function StickyBar({
   return (
     <div className="sticky top-0 z-40 -mx-4 mb-10 border-b border-rule bg-paper px-4 sm:-mx-6 sm:px-6">
       <div className="mx-auto flex h-[46px] max-w-page items-center gap-4">
-        {/* The wordmark returns, and carries the way home. */}
-        <Link
-          href="/"
-          title="Session Context — back to the top"
-          onClick={(e) => {
-            if (location.pathname === "/") {
-              e.preventDefault();
-              scrollTo({ top: 0 });
-            }
-          }}
+        {/*
+          * The wordmark is the way back to the top of whatever you are
+          * reading — which is where the masthead, and therefore the page
+          * navigation, lives. Moving between pages is the job of the links on
+          * the right, so this never has to guess which you meant.
+          */}
+        <button
+          type="button"
+          title="Back to the top"
+          aria-label="Back to the top"
+          // A jump, not a glide: this document runs to tens of thousands of
+          // pixels, where smooth scrolling stops being a courtesy.
+          onClick={() => scrollTo({ top: 0, behavior: "instant" as ScrollBehavior })}
           className={cx(
+            "group/top",
             // Collapses to nothing at rest so the section label keeps the left
             // margin, then widens as the masthead leaves.
             "flex shrink-0 items-center gap-2 overflow-hidden whitespace-nowrap no-underline",
@@ -64,11 +69,17 @@ export function StickyBar({
             detached ? "max-w-[16rem] opacity-100" : "pointer-events-none max-w-0 opacity-0"
           )}
         >
-          <Logo className="h-4 w-auto" />
+          <span className="relative grid size-4 place-items-center">
+            <Logo className="h-4 w-auto transition-opacity group-hover/top:opacity-0" />
+            <Icon
+              name="up"
+              className="absolute size-4 opacity-0 transition-opacity group-hover/top:opacity-100"
+            />
+          </span>
           <span className="hidden text-sm font-semibold tracking-tight sm:inline">
             Session Context
           </span>
-        </Link>
+        </button>
 
         <span
           className={cx(
@@ -86,13 +97,16 @@ export function StickyBar({
             detached ? "max-w-[16rem] opacity-100" : "pointer-events-none max-w-0 opacity-0"
           )}
         >
-          {PAGES.filter((p) => !(current === "data" && p.href === "/")).map((p) => (
+          {PAGES.map((p) => (
             <Link
               key={p.href}
               href={p.href}
               className={cx(
                 "hidden text-sm no-underline hover:text-ink hover:underline sm:inline",
-                (current === "methods" && p.href === "/methods") ? "text-ink" : "text-ink-muted"
+                (current === "data" && p.href === "/") ||
+                  (current === "methods" && p.href === "/methods")
+                  ? "text-ink"
+                  : "text-ink-muted"
               )}
             >
               {p.label}

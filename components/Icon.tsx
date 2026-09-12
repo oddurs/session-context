@@ -2,7 +2,7 @@ import {
   AppWindow, BookOpen, Braces, Clock, Copy, Cpu, Database, Download, Eye,
   Fingerprint, Frame, Globe, Info, Keyboard, KeyRound, Layers,
   Megaphone, Monitor, MousePointer2, Paintbrush, RadioTower, RefreshCw, Send,
-  Check, Server, Shield, SlidersHorizontal, Thermometer, type LucideIcon,
+  ArrowUp, Check, Server, Shield, SlidersHorizontal, Thermometer, type LucideIcon,
 } from "lucide-react";
 
 /**
@@ -55,6 +55,7 @@ const ICONS = {
   database: Database,
   pointer: MousePointer2,
   check: Check,
+  up: ArrowUp,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;
