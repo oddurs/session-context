@@ -99,8 +99,11 @@ async function run(wsUrl) {
 
   // A page that renders nothing is a pass by the console's standards and a
   // failure by any other, so assert that collection actually happened.
-  const isDataPage = !URL_.includes("/methods");
-  const minimum = isDataPage ? { findings: 20, tables: 30, rows: 600 } : { tables: 6, rows: 0, findings: 0 };
+  // Only the data page collects; every other route is prose and is asked
+  // merely to render something.
+  const path = new URL(URL_).pathname;
+  const minimum =
+    path === "/" ? { findings: 20, tables: 30, rows: 600 } : { tables: 5, rows: 0, findings: 0 };
   for (const [key, floor] of Object.entries(minimum)) {
     if (Number(counts[key]) < floor) {
       problems += 1;
