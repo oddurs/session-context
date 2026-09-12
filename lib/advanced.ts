@@ -390,6 +390,11 @@ export async function persistenceSection(): Promise<Section> {
       { k: "HTTP cache (ETag) identifier", v: etag.id ?? etag.error, n: "not site data — lives in the cache" },
       { k: "server has revalidated this ETag", v: etag.hits != null ? `${etag.hits} time(s)` : undefined, n: "each one proves it is you" },
       { k: "ETag first issued", v: etag.firstSeen },
+      {
+        k: "ETag retention",
+        v: "24 hours, or 5,000 visitors",
+        n: "after that the server forgets and mints a new one — a limit of this demonstration, not of the technique",
+      },
       { k: "visit count", v: visits },
       { k: "first seen", v: firstSeen },
       { k: "all copies now rewritten", v: true, n: "respawn complete" },
@@ -888,4 +893,64 @@ export async function probeSchemes(): Promise<Section> {
     note: "Detected by asking the browser to open each application's own URL scheme and watching whether this window lost focus. Browsers have tightened this repeatedly because it reveals software you never told the web about.",
     rows,
   };
+}
+
+/* ── the remedy ──────────────────────────────────────────────── */
+
+export type ErasureResult = { store: string; cleared: boolean; note?: string };
+
+/**
+ * Undo what this page stored.
+ *
+ * A page that demonstrates respawning identifiers should be able to remove
+ * them, and watching how many separate places have to be cleared is itself
+ * the lesson. One store cannot be reached from JavaScript at all, and saying
+ * so is more honest than quietly leaving it out.
+ */
+export async function eraseEverything(): Promise<ErasureResult[]> {
+  const results: ErasureResult[] = [];
+  const record = (store: string, fn: () => void | Promise<void>, note?: string) =>
+    Promise.resolve()
+      .then(fn)
+      .then(() => results.push({ store, cleared: true, note }))
+      .catch((e) => results.push({ store, cleared: false, note: (e as Error).message }));
+
+  await record("Cookies", () => {
+    for (const cookie of document.cookie.split(";")) {
+      const name = cookie.split("=")[0]?.trim();
+      if (name) document.cookie = `${name}=; Max-Age=0; path=/`;
+    }
+  });
+
+  await record("localStorage", () => localStorage.clear());
+  await record("sessionStorage", () => sessionStorage.clear());
+
+  await record("IndexedDB", async () => {
+    const dbs = await (indexedDB as unknown as {
+      databases?: () => Promise<{ name?: string }[]>;
+    }).databases?.();
+    for (const db of dbs ?? []) if (db.name) indexedDB.deleteDatabase(db.name);
+  });
+
+  await record("Cache Storage", async () => {
+    for (const key of await caches.keys()) await caches.delete(key);
+  });
+
+  await record("Service worker", async () => {
+    const registrations = await navigator.serviceWorker?.getRegistrations?.();
+    for (const registration of registrations ?? []) await registration.unregister();
+  });
+
+  await record("window.name", () => {
+    window.name = "";
+  });
+
+  // The ETag identifier lives in the HTTP cache, which no page can clear.
+  results.push({
+    store: "HTTP cache (ETag)",
+    cleared: false,
+    note: "No page can clear the browser cache. This one survives everything above, and goes only when you clear the cache yourself.",
+  });
+
+  return results;
 }

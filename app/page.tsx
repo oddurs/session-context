@@ -141,6 +141,44 @@ export default async function Page() {
         lede="Everything a single web page can work out about the browser, device and person that requested it. The plain-English findings come first — each expands to the exact values behind it — and the complete field-by-field record follows."
         note="Every value is computed and displayed locally. Nothing is transmitted, and no part of this page contacts another company."
       />
+      {/*
+        * With scripts off, the page still knows everything the server was told
+        * and everything the stylesheet reported. Saying so is the whole point:
+        * blocking JavaScript is not the defense people take it for.
+        */}
+      <noscript>
+        <section className="border-b border-rule py-8">
+          <h2 className="text-xl font-semibold tracking-tight">
+            You have JavaScript disabled. It changed less than you would hope.
+          </h2>
+          <p className="mt-2 max-w-[72ch] text-base leading-relaxed text-ink-muted">
+            The findings below normally come from scripts, and those are not
+            running. Everything in this list arrived anyway — sent by your
+            browser before any code could execute, or reported by the
+            stylesheet, which needs no scripting at all. One of the CSS rules
+            on this page fires only when scripting is off, so the server has
+            already recorded that you are reading it this way.
+          </p>
+          <dl className="mt-6 grid max-w-[72ch] gap-x-8 gap-y-3 sm:grid-cols-2">
+            {server
+              .flatMap((s) => s.rows.map((r) => ({ ...r, from: s.title })))
+              .filter((r) => r.v !== undefined && String(r.v).length < 90)
+              .slice(0, 24)
+              .map((r, i) => (
+                <div key={`${r.k}-${i}`}>
+                  <dt className="text-xs text-ink-faint">{r.k}</dt>
+                  <dd className="font-mono text-sm break-words">{String(r.v)}</dd>
+                </div>
+              ))}
+          </dl>
+          <p className="mt-6 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
+            The full explanation of how each technique works is on the{" "}
+            <a href="/methods">methods page</a>, which is plain prose and needs
+            no scripts either.
+          </p>
+        </section>
+      </noscript>
+
       <ClientProbe serverSections={server} probeKey={probeKey} nonce={nonce} />
       <footer className="mt-16 border-t border-rule pt-4 text-sm leading-relaxed text-ink-muted">
         <p className="max-w-[76ch]">

@@ -245,7 +245,7 @@ export function deriveFindings(sections: Section[]): Finding[] {
     {
       id: "f-network",
       group: "Where you are",
-      headline: "The quality of your connection is visible.",
+      headline: "This page can see the quality of your connection.",
       detail:
         "Round-trip time and bandwidth are reported to any page that asks, and hint at whether you are on home broadband, an office network, mobile data, or a train.",
       how: "Read by script",
@@ -270,7 +270,7 @@ export function deriveFindings(sections: Section[]): Finding[] {
       group: "The machine in front of you",
       headline: chip
         ? `You are using a Mac with an Apple ${chip.trim()} chip.`
-        : "The exact graphics chip in this computer is readable.",
+        : "This page can name the exact graphics chip in your computer.",
       detail:
         "The graphics driver gives its full name to any page that asks, with no prompt. It names the chip and driver build, which narrows you to a model of computer and roughly what it cost.",
       how: "Read by script",
@@ -353,7 +353,7 @@ export function deriveFindings(sections: Section[]): Finding[] {
     {
       id: "f-disk",
       group: "The machine in front of you",
-      headline: "Your free disk space can be estimated from here.",
+      headline: "This page can estimate how much free disk space you have.",
       detail:
         "The browser tells any page how much data it will store, and calculates that from free disk space. The number is personal, and drifts slowly enough to help recognize you later.",
       how: "Read by script",
@@ -592,7 +592,7 @@ export function deriveFindings(sections: Section[]): Finding[] {
       id: "f-referrer",
       group: "What you did on this page",
       headline: has(ref) && !String(ref).startsWith("none")
-        ? "The page that sent you here is recorded."
+        ? "This page knows which page sent you here."
         : "You came here directly, not from a link.",
       detail:
         "Browsers tell each site which page you were on immediately before. Follow that across enough sites, which is what embedded trackers do, and the trail becomes a browsing history.",
@@ -708,7 +708,7 @@ export function deriveFindings(sections: Section[]): Finding[] {
     {
       id: "f-idle",
       group: "What you handed over",
-      headline: "Whether you are sitting at your computer is now readable.",
+      headline: "This page can now tell whether you are sitting at your computer.",
       detail:
         "Idle detection reports whether you are active and whether your screen is locked. It keeps reporting in the background, long after you stop looking at this page.",
       how: "You granted this",

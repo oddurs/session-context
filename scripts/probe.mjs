@@ -96,4 +96,15 @@ async function run(wsUrl) {
   console.log(`${URL_}`);
   for (const [key, value] of Object.entries(counts)) console.log(`  ${key}: ${value}`);
   console.log(problems ? `  ${problems} console problem(s)` : "  no console errors");
+
+  // A page that renders nothing is a pass by the console's standards and a
+  // failure by any other, so assert that collection actually happened.
+  const isDataPage = !URL_.includes("/methods");
+  const minimum = isDataPage ? { findings: 20, tables: 30, rows: 600 } : { tables: 6, rows: 0, findings: 0 };
+  for (const [key, floor] of Object.entries(minimum)) {
+    if (Number(counts[key]) < floor) {
+      problems += 1;
+      console.error(`  expected at least ${floor} ${key}, found ${counts[key]}`);
+    }
+  }
 }

@@ -18,3 +18,33 @@ jobs:
       - run: npx tsc --noEmit
       - run: npx eslint .
       - run: npm run build
+
+  browser:
+    # Most of this codebase does nothing under server rendering, and the
+    # failures that matter — hydration mismatches, probes that never resolve —
+    # are invisible to a build. This drives a real browser at the built site
+    # and fails on any console error.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Start the server
+        run: |
+          NODE_ENV=production PORT=3939 node server.mjs &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3939/methods > /dev/null && break
+            sleep 2
+          done
+      - name: Drive a real browser
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: npm run probe -- http://localhost:3939/ 20000
+      - name: Check the methods page too
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: npm run probe -- http://localhost:3939/methods 8000

@@ -28,11 +28,13 @@ import { FINDING_GROUPS, GRANTED_GROUP, deriveFindings } from "@/lib/findings";
 import { CATEGORIES } from "@/lib/taxonomy";
 import { SectionBlock, isUnreported } from "./DataTable";
 import { Findings } from "./Findings";
+import { Identifiability } from "./Identifiability";
 import { CollectionLog, CollectionReceipt } from "./CollectionLog";
 import { CssProbe } from "./CssProbe";
 import { ThirdParty } from "./ThirdParty";
 import { TrackerPayloads } from "./TrackerPayloads";
 import { TypingBiometrics } from "./TypingBiometrics";
+import { EraseButton } from "./EraseButton";
 import { Icon } from "./Icon";
 import { Button, Checkbox, RuleHeading, cx } from "./ui";
 
@@ -445,6 +447,7 @@ export function ClientProbe({
               <div className="motion-safe:animate-[fade-in_180ms_ease-out]">
                 <CollectionReceipt phases={phases} elapsed={elapsed} />
                 <Findings findings={passiveFindings} groups={passiveGroups} />
+                <Identifiability />
               </div>
             )}
 
@@ -455,6 +458,7 @@ export function ClientProbe({
                 place, below the box.
               </p>
               <TypingBiometrics onResult={addSection} />
+              <EraseButton />
             </div>
           </section>
 

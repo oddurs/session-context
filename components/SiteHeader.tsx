@@ -65,6 +65,14 @@ export function SiteHeader({
       {note && (
         <p className="mt-4 max-w-[64ch] border-t border-rule pt-3 text-sm leading-relaxed text-ink-faint">
           {note}
+          {current === "data" && (
+            <>
+              {" "}
+              <Link href="/methods" className="text-ink-muted">
+                How each technique works →
+              </Link>
+            </>
+          )}
         </p>
       )}
     </header>

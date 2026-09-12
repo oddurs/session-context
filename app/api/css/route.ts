@@ -1,4 +1,4 @@
-import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/rate-limit";
 import { recordCssHit } from "@/lib/server-store";
 
 export const dynamic = "force-dynamic";
@@ -13,8 +13,10 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const key = url.searchParams.get("s");
   const feature = url.searchParams.get("f");
-  // One page load fires at most a few dozen probes, so this only catches bots.
-  if (key && feature && rateLimit(`css:${clientKey(req)}`, 300)) {
+  // Limited per probe key rather than per address: visitors behind a shared
+  // office or campus address would otherwise truncate each other's results,
+  // and a silently incomplete demonstration is worse than none.
+  if (key && feature && rateLimit(`css:${key}`, 400)) {
     recordCssHit(key, feature);
   }
 
