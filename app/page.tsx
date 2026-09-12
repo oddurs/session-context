@@ -29,23 +29,42 @@ async function serverSections(): Promise<Section[]> {
 
   const fwd = h.get("x-forwarded-for");
   const ua = h.get("user-agent") ?? "";
+  // Behind a hosting proxy the socket belongs to the proxy, not the visitor,
+  // and the headers have already been re-emitted. Saying otherwise would
+  // overclaim exactly where this page is asking to be trusted.
+  const proxied = Boolean(fwd || h.get("x-forwarded-proto"));
+  const viaProxy = proxied ? "as seen from the hosting proxy, not the browser" : undefined;
 
   const connectionRows: Row[] = [
-    { k: "HTTP version", v: dm("http-version") },
-    { k: "transport", v: dm("encrypted") },
-    { k: "remote address", v: dm("remote-addr"), n: "peer socket address" },
-    { k: "remote port", v: dm("remote-port"), n: "ephemeral, new per connection" },
+    {
+      k: "HTTP version",
+      v: dm("http-version"),
+      n: proxied ? "proxy to server; your browser likely negotiated HTTP/2 or /3 at the edge" : undefined,
+    },
+    {
+      k: "transport",
+      v: dm("encrypted"),
+      n: proxied ? "the proxy terminated TLS; your connection to it was encrypted" : undefined,
+    },
+    { k: "remote address", v: dm("remote-addr"), n: proxied ? "the proxy's address, not yours" : "peer socket address" },
+    { k: "remote port", v: dm("remote-port"), n: proxied ? "the proxy's port" : "ephemeral, new per connection" },
     { k: "address family", v: dm("remote-family") },
     { k: "local (server) address", v: dm("local-addr") },
     { k: "requests on this TCP connection", v: dm("socket-requests"), n: "keep-alive reuse" },
     { k: "bytes read on socket", v: dm("socket-bytes-read") },
     { k: "header count", v: dm("header-count") },
-    { k: "raw header order", v: dm("header-order"), n: "browser-specific; survives UA spoofing" },
+    {
+      k: "raw header order",
+      v: dm("header-order"),
+      n: proxied
+        ? "re-emitted by the proxy — not your browser's own order"
+        : "browser-specific; survives UA spoofing",
+    },
     { k: "request line", v: `${dm("method")} ${dm("url")}` },
   ];
 
   const derived: Row[] = [
-    { k: "client IP (x-forwarded-for)", v: fwd?.split(",")[0]?.trim() ?? "no proxy header" },
+    { k: "client IP (x-forwarded-for)", v: fwd?.split(",")[0]?.trim() ?? "no proxy header", n: viaProxy && "your real address, forwarded by the proxy" },
     { k: "proxy chain", v: fwd ?? "direct connection" },
     { k: "x-real-ip", v: h.get("x-real-ip") ?? undefined },
     { k: "Host requested", v: h.get("host") ?? undefined },
@@ -91,7 +110,9 @@ async function serverSections(): Promise<Section[]> {
     {
       id: "connection",
       title: "Connection & Protocol",
-      note: "Facts from the TCP socket itself, below the HTTP layer. Header ordering in particular is a passive fingerprint: each browser engine emits headers in its own fixed order regardless of what the user-agent string claims.",
+      note: proxied
+        ? "Facts read from the TCP socket, below the HTTP layer. This deployment sits behind a hosting proxy, so the socket here belongs to that proxy and the headers have been re-emitted by it: the ordering below is the proxy's, not your browser's. Run the site directly, with no proxy in front, and this section reports your browser's own header order — a passive fingerprint that survives user-agent spoofing."
+        : "Facts from the TCP socket itself, below the HTTP layer. Header ordering in particular is a passive fingerprint: each browser engine emits headers in its own fixed order regardless of what the user-agent string claims.",
       rows: connectionRows,
     },
     {
