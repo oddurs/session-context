@@ -32,35 +32,6 @@ import { TypingBiometrics } from "./TypingBiometrics";
 import { Icon } from "./Icon";
 import { Button, Card, Checkbox, RuleHeading, Table, Td, cx } from "./ui";
 
-/** A hairline showing how far through the document you are. */
-function ScrollProgress() {
-  const [pct, setPct] = useState(0);
-  useEffect(() => {
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      setPct(max > 0 ? Math.min(window.scrollY / max, 1) * 100 : 0);
-    };
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(update);
-    };
-    update();
-    addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      removeEventListener("scroll", onScroll);
-      if (frame) cancelAnimationFrame(frame);
-    };
-  }, []);
-  return (
-    <div
-      aria-hidden
-      className="absolute inset-x-0 bottom-0 h-px bg-ink transition-[width] duration-75"
-      style={{ width: `${pct}%` }}
-    />
-  );
-}
-
 /** Raw-data category → the matching group on the methods page. */
 const METHODS_GROUP: Record<string, string> = {
   server: "passive",
@@ -365,7 +336,7 @@ export function ClientProbe({
       </dl>
 
       {/* sticky bar: where you are, and what you can do about it */}
-      <div className="relative sticky top-0 z-40 -mx-4 mb-10 border-b border-rule bg-paper px-4 py-2 sm:-mx-6 sm:px-6">
+      <div className="sticky top-0 z-40 -mx-4 mb-10 border-b border-rule bg-paper px-4 py-2 sm:-mx-6 sm:px-6">
         <div className="mx-auto flex max-w-page items-center gap-4">
           <button
             type="button"
@@ -397,7 +368,6 @@ export function ClientProbe({
             </Button>
           </div>
         </div>
-        <ScrollProgress />
       </div>
 
       <div className="lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
