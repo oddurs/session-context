@@ -190,10 +190,12 @@ export function deriveFindings(sections: Section[]): Finding[] {
     if (!has(langs)) return undefined;
     try {
       const dn = new Intl.DisplayNames(undefined, { type: "language" });
-      const names = String(langs)
-        .split(", ")
-        .map((tag) => dn.of(tag) ?? tag);
-      return [...new Set(names)].join(", ");
+      const tags = String(langs).split(", ");
+      const names = tags.map((tag) => dn.of(tag) ?? tag);
+      // "en-US, en" resolves to "American English, English"; keep the most
+      // specific name and say how many the browser lists.
+      const primary = names[0];
+      return tags.length > 1 ? `${primary}, and ${tags.length - 1} more in order` : primary;
     } catch {
       return String(langs);
     }

@@ -14,11 +14,12 @@
   /* Ink */
   --color-ink: #16160f;
   --color-ink-muted: #605e54;
-  --color-ink-faint: #94918a;
+  --color-ink-faint: #76736e;
 
   /* Lines */
   --color-rule: #e4e2da;
-  --color-rule-strong: #c9c6bb;
+  /* A lighter line for interior table rules, where 3:1 is not required */
+  --color-rule-strong: #94918c;
 
   /* Emphasis, monochrome: weight and contrast carry meaning, not hue */
   --color-accent: #16160f;

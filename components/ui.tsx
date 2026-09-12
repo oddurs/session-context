@@ -172,9 +172,26 @@ export function Checkbox({
 
 /* ── tooltip: a light annotation panel ───────────────────────── */
 
-export function Tooltip({ children, label }: { children: ReactNode; label: string }) {
+export function Tooltip({
+  children,
+  label,
+  focusable,
+}: {
+  children: ReactNode;
+  label: string;
+  /** Only for tooltips that are the sole source of their information. */
+  focusable?: boolean;
+}) {
   return (
-    <span className="group/tip relative inline-flex align-middle" tabIndex={0} role="note">
+    <span
+      className="group/tip relative inline-flex align-middle"
+      // Hundreds of these appear in the tables. Making each one a tab stop
+      // would bury every real control, so the text is exposed to assistive
+      // technology by label instead.
+      tabIndex={focusable ? 0 : undefined}
+      role="note"
+      aria-label={label}
+    >
       {children}
       <span
         className="pointer-events-none invisible absolute left-0 top-[calc(100%+6px)] z-50 w-[min(23rem,72vw)]

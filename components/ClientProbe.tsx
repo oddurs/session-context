@@ -12,6 +12,7 @@ import {
   sortSections,
 } from "@/lib/collect";
 import { applyLive, watchLive } from "@/lib/live";
+import { useMediaQuery } from "@/lib/use-client-value";
 import {
   probeClipboard,
   probeIdle,
@@ -30,6 +31,35 @@ import { TrackerPayloads } from "./TrackerPayloads";
 import { TypingBiometrics } from "./TypingBiometrics";
 import { Icon } from "./Icon";
 import { Button, Card, Checkbox, RuleHeading, Table, Td, cx } from "./ui";
+
+/** A hairline showing how far through the document you are. */
+function ScrollProgress() {
+  const [pct, setPct] = useState(0);
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setPct(max > 0 ? Math.min(window.scrollY / max, 1) * 100 : 0);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
+  return (
+    <div
+      aria-hidden
+      className="absolute inset-x-0 bottom-0 h-px bg-ink transition-[width] duration-75"
+      style={{ width: `${pct}%` }}
+    />
+  );
+}
 
 /** Raw-data category → the matching group on the methods page. */
 const METHODS_GROUP: Record<string, string> = {
@@ -246,6 +276,14 @@ export function ClientProbe({
 
   // Every anchor in reading order: the findings, then each category and the
   // tables inside it.
+  // The index is open beside the content on wide screens and collapsed above
+  // it on narrow ones. Set imperatively so a re-render never reopens it.
+  const isWide = useMediaQuery("(min-width: 1024px)", true);
+  const toc = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    if (toc.current) toc.current.open = isWide;
+  }, [isWide]);
+
   const navIds = useMemo(() => {
     const ids = ["plain"];
     for (const c of CATEGORIES) {
@@ -327,9 +365,14 @@ export function ClientProbe({
       </dl>
 
       {/* sticky bar: where you are, and what you can do about it */}
-      <div className="sticky top-0 z-40 -mx-4 mb-10 border-b border-rule bg-paper px-4 py-2 sm:-mx-6 sm:px-6">
+      <div className="relative sticky top-0 z-40 -mx-4 mb-10 border-b border-rule bg-paper px-4 py-2 sm:-mx-6 sm:px-6">
         <div className="mx-auto flex max-w-page items-center gap-4">
-          <span className="truncate text-sm text-ink-muted">
+          <button
+            type="button"
+            title="Back to the top"
+            onClick={() => scrollTo({ top: 0 })}
+            className="truncate text-left text-sm text-ink-muted hover:text-ink"
+          >
             {activeId === "plain" || !activeId
               ? "In plain English"
               : [
@@ -338,7 +381,7 @@ export function ClientProbe({
                 ]
                   .filter(Boolean)
                   .join("  ·  ")}
-          </span>
+          </button>
           <div className="ml-auto flex items-center gap-1">
             <Button variant="quiet" onClick={() => void collect()} disabled={busy !== null}>
               <Icon name="refresh" className="size-3.5" />
@@ -354,13 +397,22 @@ export function ClientProbe({
             </Button>
           </div>
         </div>
+        <ScrollProgress />
       </div>
 
       <div className="lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
         {/* contents rail */}
         <nav aria-label="Contents" className="mb-10 lg:sticky lg:top-14 lg:mb-0 lg:self-start">
-          <div className="label mb-2 border-b border-rule pb-1.5">Contents</div>
-          <ul className="space-y-1 text-sm">
+          {/* Collapsed on small screens: a full index above the content pushes
+              the page itself off the first screen. */}
+          <details ref={toc} className="group/toc">
+            <summary className="label flex cursor-pointer list-none items-center justify-between border-b border-rule pb-1.5 lg:pointer-events-none">
+              Contents
+              <span className="text-ink-faint lg:hidden">
+                {all.length} tables
+              </span>
+            </summary>
+          <ul className="mt-2 space-y-1 text-sm">
             <li>
               <a
                 href="#plain"
@@ -413,6 +465,7 @@ export function ClientProbe({
               );
             })}
           </ul>
+          </details>
         </nav>
 
         <div className="min-w-0">
