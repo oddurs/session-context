@@ -634,14 +634,20 @@ export function deriveFindings(sections: Section[]): Finding[] {
 
   /* ── granted ───────────────────────────────────────────────── */
 
+  // Fourteen decimal places on a fix accurate to tens of meters is noise
+  // pretending to be data. The table below keeps every digit; the sentence
+  // quotes as many as the accuracy can support.
+  const coord = (v: unknown) =>
+    typeof v === "number" ? v.toFixed(5) : typeof v === "string" ? Number(v).toFixed(5) : v;
+
   const lat = g("geolocation", "latitude");
   add(
     {
       id: "f-geo",
       group: "What you handed over",
-      headline: `You handed over your exact position: ${lat}, ${g("geolocation", "longitude")}.`,
+      headline: `You handed over your exact position: ${coord(lat)}, ${coord(g("geolocation", "longitude"))}.`,
       detail:
-        "Accurate to the meters shown below — a building, not a city. Granted once, a site can keep asking for it every time you return.",
+        "A building, not a city — and the accuracy figure says how close. Granted once, a site may keep asking for it every time you return, and most do.",
       how: "You granted this",
       sectionId: "geolocation",
       evidence: [
@@ -677,9 +683,12 @@ export function deriveFindings(sections: Section[]): Finding[] {
     {
       id: "f-localfonts",
       group: "What you handed over",
-      headline: isOne(localFonts)
-        ? "You handed over the one font installed on your system."
-        : `You handed over all ${localFonts} fonts installed on your system.`,
+      headline:
+        localFonts === 0
+          ? "You opened the font picker and handed over nothing."
+          : isOne(localFonts)
+            ? "You handed over the one font installed on your system."
+            : `You handed over all ${localFonts} fonts installed on your system.`,
       detail:
         "Not an estimate this time: the real list, straight from the operating system. It reveals the software you own and, for many people, is unique on its own.",
       how: "You granted this",

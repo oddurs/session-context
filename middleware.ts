@@ -33,10 +33,26 @@ export function middleware(request: NextRequest) {
     .filter(Boolean)
     .join(" ");
 
+  // The dev server is a different application from the built one. Turbopack
+  // evaluates modules with `eval`, injects its own unnonced stylesheets, and
+  // loads chunks in a way Firefox does not accept under 'strict-dynamic' —
+  // there the app never hydrates at all and the page sits on its loading state
+  // forever, with no error to explain it. Chrome's dev path happens not to hit
+  // any of it, which is what made this look like a Firefox bug.
+  //
+  // So development gets the ordinary Next dev policy and production keeps the
+  // strict one. The policy shipped to real visitors is the `dev === false`
+  // branch, and that is the one worth reading.
+  const dev = process.env.NODE_ENV !== "production";
+
   const csp = [
     `default-src 'self'`,
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
-    `style-src 'self' 'nonce-${nonce}'`,
+    dev
+      ? `script-src 'self' 'unsafe-inline' 'unsafe-eval'`
+      : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    // A nonce makes the browser ignore 'unsafe-inline', so dev drops the nonce
+    // rather than listing both and getting neither.
+    dev ? `style-src 'self' 'unsafe-inline'` : `style-src 'self' 'nonce-${nonce}'`,
     // React sets width and position through style attributes.
     `style-src-attr 'unsafe-inline'`,
     `img-src 'self' data: blob:`,
@@ -50,8 +66,15 @@ export function middleware(request: NextRequest) {
     `base-uri 'self'`,
     `form-action 'self'`,
     `object-src 'none'`,
-    `upgrade-insecure-requests`,
-  ].join("; ");
+    // Only meaningful once the site is actually served over TLS. On a plain
+    // http:// origin it also upgrades the dev server's own ws:// hot-reload
+    // socket to wss://, which nothing is listening on: Chrome exempts loopback
+    // from the upgrade, Firefox does not, so there the dev client could never
+    // connect and the app never hydrated at all.
+    dev ? "" : `upgrade-insecure-requests`,
+  ]
+    .filter(Boolean)
+    .join("; ");
 
   const headers = new Headers(request.headers);
   headers.set("x-nonce", nonce);

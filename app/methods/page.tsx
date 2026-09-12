@@ -31,7 +31,7 @@ export default function MethodsPage() {
   ];
 
   return (
-    <main id="main" className="mx-auto max-w-page px-4 pb-24 sm:px-6">
+    <main id="main" className="mx-auto max-w-page px-4 pb-major sm:px-6">
       <SiteHeader
         current="methods"
         title="How each of these works"
@@ -39,14 +39,14 @@ export default function MethodsPage() {
         note="Written to be read alongside the data page: each entry links to the table it produces."
       />
 
-      <dl className="grid grid-cols-2 gap-y-4 border-b border-rule py-4 sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-y-body border-b border-rule py-body sm:grid-cols-4">
         {dateline.map((d, i) => (
           <div
             key={d.label}
             className={cxIfFirst(i)}
           >
             <dt className="text-xs text-ink-faint">{d.label}</dt>
-            <dd className="mt-1 text-[1.05rem] font-medium leading-none tracking-[-0.01em] tabular">
+            <dd className="mt-hair text-lg font-medium leading-none tracking-[-0.01em] tabular">
               {d.value}
             </dd>
           </div>
@@ -63,14 +63,14 @@ export default function MethodsPage() {
       <MethodsSummary />
 
       <div>
-        <div className="min-w-0 max-w-[80ch]">
+        <div className="min-w-0 max-w-wide">
           {CATALOGUE.map((g) => (
-            <section key={g.id} id={g.id} className="mt-12 first:mt-0">
-              <RuleHeading as="h2" className="mb-2">
+            <section key={g.id} id={g.id} className="mt-section first:mt-0">
+              <RuleHeading as="h2" className="mb-tight">
                 <Icon name={g.icon} className="size-4 text-ink-faint" />
                 {g.title}
               </RuleHeading>
-              <p className="mb-6 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
+              <p className="mb-body max-w-text text-sm text-ink-muted">
                 {g.intro}
               </p>
 
@@ -80,28 +80,28 @@ export default function MethodsPage() {
             </section>
           ))}
 
-          <section id="declined" className="mt-12">
-            <RuleHeading as="h2" className="mb-2">
+          <section id="declined" className="mt-section">
+            <RuleHeading as="h2" className="mb-tight">
               <Icon name="shield" className="size-4 text-ink-faint" />
               Deliberately not built
             </RuleHeading>
-            <div className="mb-6">
-              <p className="max-w-[74ch] text-sm leading-relaxed text-ink-muted">
+            <div className="mb-body">
+              <p className="max-w-text text-sm text-ink-muted">
                 A demonstration of surveillance should not itself be surveillance. These
                 techniques are real, documented, and would have worked here. Each was left
                 out for a stated reason.
               </p>
             </div>
             {DECLINED.map((d) => (
-              <article key={d.name} className="border-t border-rule py-5 first:border-t-0 first:pt-3">
-                <h3 className="text-lg font-medium leading-snug tracking-tight">{d.name}</h3>
-                <p className="mt-2 max-w-[72ch] text-sm leading-relaxed text-ink-muted">{d.why}</p>
+              <article key={d.name} className="border-t border-rule py-item first:border-t-0 first:pt-0">
+                <h3 className="text-lg font-medium tracking-tight">{d.name}</h3>
+                <p className="mt-tight max-w-text text-sm text-ink-muted">{d.why}</p>
               </article>
             ))}
           </section>
 
-          <RuleHeading className="mt-12 mb-3">Built with</RuleHeading>
-          <p className="max-w-[74ch] text-sm leading-relaxed text-ink-muted">
+          <RuleHeading className="mt-section mb-body">Built with</RuleHeading>
+          <p className="max-w-text text-sm text-ink-muted">
             FingerprintJS, ua-parser-js and detectIncognito alongside direct platform
             probes. Every value on the data page is computed and displayed locally;
             nothing is transmitted, and no part of this site contacts another company.

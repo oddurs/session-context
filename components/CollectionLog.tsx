@@ -22,8 +22,8 @@ function Line({
   state: "done" | "running" | "waiting";
 }) {
   return (
-    <li className="border-t border-rule py-2 first:border-t-0">
-      <div className="flex items-baseline gap-3">
+    <li className="border-t border-rule py-snug first:border-t-0">
+      <div className="flex items-baseline gap-snug">
         <span
           aria-hidden
           className={cx(
@@ -54,15 +54,21 @@ function Line({
       </div>
 
       {/* The running pass gets a moving hairline: something is happening, and
-          how long it will take is genuinely unknown. */}
+          how long it will take is genuinely unknown.
+          It carries no track of its own — a full-width rule here sits a few
+          pixels above the next row's border and reads as a doubled underline
+          rather than as progress. The travelling segment is the whole signal. */}
       <div
         aria-hidden
         className={cx(
-          "mt-1.5 ml-[0.6rem] h-px overflow-hidden transition-opacity duration-300",
-          state === "running" ? "bg-rule opacity-100" : "opacity-0"
+          "mt-tight ml-[0.6rem] h-px overflow-hidden transition-opacity duration-300",
+          state === "running" ? "opacity-100" : "opacity-0"
         )}
       >
-        <div className="h-px w-1/5 bg-ink animate-[sweep_1.4s_ease-in-out_infinite]" />
+        <div
+          className="h-px w-1/5 bg-ink-faint motion-safe:animate-[sweep_1.4s_ease-in-out_infinite]
+                     motion-reduce:w-full motion-reduce:bg-rule"
+        />
       </div>
     </li>
   );
@@ -79,11 +85,11 @@ export function CollectionLog({ phases }: { phases: Phase[] }) {
   return (
     <section aria-live="polite" aria-label="Collection progress">
       <h3 className="text-base font-medium">Collecting</h3>
-      <p className="mt-1 mb-3 max-w-[70ch] text-sm leading-relaxed text-ink-muted">
+      <p className="mt-tight mb-body max-w-text text-sm text-ink-muted">
         None of this asks your permission. The findings appear as soon as the
         last pass lands.
       </p>
-      <ul className="max-w-[72ch]">
+      <ul className="max-w-text">
         {PASSES.map((p) => {
           const finished = phases.find((x) => x.id === p.id);
           return (
@@ -112,10 +118,10 @@ export function CollectionReceipt({
   if (!phases.length) return null;
   return (
     <Disclosure
-      className="mb-8"
+      className="mb-group"
       summary={`Collected in ${Math.round(elapsed)} ms — show what ran`}
     >
-      <ul className="max-w-[72ch] border-t border-rule pt-1">
+      <ul className="max-w-text border-t border-rule pt-hair">
         {phases.map((p) => (
           <Line key={p.id} label={p.label} at={p.at} fields={p.fields} state="done" />
         ))}

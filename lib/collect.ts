@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { Row, Section } from "./types";
-import { list, probe, probeAsync } from "./probe";
+import type { GatedResult, Row, Section } from "./types";
+import { classifyDomError, list, probe, probeAsync } from "./probe";
 
 /* ── helpers ─────────────────────────────────────────────────── */
 
@@ -1183,22 +1183,58 @@ import { PLACEMENT, SECTION_ORDER } from "./taxonomy";
  * (graphics, benchmarks, composite fingerprinting) follow.
  */
 /**
- * Run a batch of section probes so that one failure costs one section rather
- * than the whole collection.
+ * A probe that never settles used to stop the page dead.
+ *
+ * Several of these APIs can hang rather than fail — `serviceWorker.ready` in a
+ * browser that will not activate one, a permission query behind a blocked
+ * feature, a fetch a content blocker swallowed. `Promise.allSettled` waits for
+ * every one of them, so a single stall meant the collection log sat on one
+ * pass forever. Nothing here is worth more than a few seconds.
  */
-async function settle(jobs: Promise<Section>[]): Promise<Section[]> {
-  const results = await Promise.allSettled(jobs);
-  return results.flatMap((r, i) =>
-    r.status === "fulfilled"
-      ? [r.value]
-      : [
-          {
-            id: `failed-${i}`,
-            title: "Collection failed for this section",
-            note: "One probe threw where it should have returned a value. The rest of the page is unaffected.",
-            rows: [{ k: "error", v: String(r.reason?.message ?? r.reason) }],
-          } as Section,
-        ]
+const PROBE_BUDGET_MS = 6000;
+
+const STALLED = Symbol("stalled");
+
+/**
+ * Run a batch of section probes so that one failure — or one stall — costs one
+ * section rather than the whole collection.
+ *
+ * A section that does not arrive keeps its own id, so it lands in its usual
+ * place in the tables and says what happened, rather than vanishing and
+ * leaving a hole the reader cannot see.
+ */
+async function settle(jobs: [id: string, job: Promise<Section>][]): Promise<Section[]> {
+  return Promise.all(
+    jobs.map(async ([id, job]) => {
+      // Whichever promise loses the race may still reject afterwards. Claim it
+      // now so it never surfaces as an unhandled rejection.
+      job.catch(() => {});
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const result = await Promise.race([
+          job,
+          new Promise<typeof STALLED>((resolve) => {
+            timer = setTimeout(() => resolve(STALLED), PROBE_BUDGET_MS);
+          }),
+        ]);
+        if (result !== STALLED) return result;
+        return {
+          id,
+          title: "This probe did not finish",
+          note: "The browser accepted the call and never answered it. That is usually a capability the browser has removed or a defense that swallowed the request silently, rather than a fault in the page.",
+          rows: [{ k: "status", v: `no answer within ${PROBE_BUDGET_MS / 1000} s` }],
+        } satisfies Section;
+      } catch (e) {
+        return {
+          id,
+          title: "Collection failed for this section",
+          note: "One probe threw where it should have returned a value. The rest of the page is unaffected.",
+          rows: [{ k: "error", v: String((e as Error)?.message ?? e) }],
+        } satisfies Section;
+      } finally {
+        clearTimeout(timer);
+      }
+    })
   );
 }
 
@@ -1252,26 +1288,26 @@ export async function collectAll(
   report("immediate", "Reading the browser, screen and document", immediate);
 
   const quick = await settle([
-    uaParserSection(),
-    uaDataSection(),
-    networkSection(),
-    hardwareSection(),
-    storageSection(),
-    devicesSection(),
-    permissionsSection(),
-    persistenceSection(),
-    crossTabSection(),
-    privacySection(),
+    ["ua-parsed", uaParserSection()],
+    ["ua-client-hints", uaDataSection()],
+    ["network", networkSection()],
+    ["hardware", hardwareSection()],
+    ["storage", storageSection()],
+    ["devices", devicesSection()],
+    ["permissions", permissionsSection()],
+    ["persistence", persistenceSection()],
+    ["cross-tab", crossTabSection()],
+    ["privacy", privacySection()],
   ]);
   report("quick", "Storage, network, devices and permissions", [...immediate, ...quick]);
 
   const heavy = await settle([
-    graphicsSection(),
-    fingerprintSection(),
-    codecSection(),
-    workerSection(),
-    systemUISection(),
-    mediaCapabilitiesSection(),
+    ["graphics", graphicsSection()],
+    ["fingerprints", fingerprintSection()],
+    ["codecs", codecSection()],
+    ["worker", workerSection()],
+    ["system-ui", systemUISection()],
+    ["media-capabilities", mediaCapabilitiesSection()],
   ]);
   report("heavy", "Fingerprinting graphics, audio and performance", [...immediate, ...quick, ...heavy]);
 
@@ -1288,7 +1324,10 @@ export async function collectAll(
  * already resolved and fill themselves in.
  */
 export async function collectDeferred(): Promise<Section[]> {
-  const sections = await settle([benchmarkSection(), thermalSection()]);
+  const sections = await settle([
+    ["benchmark", benchmarkSection()],
+    ["thermal", thermalSection()],
+  ]);
   return sortSections(sections);
 }
 
@@ -1337,86 +1376,154 @@ export function sortSections(sections: Section[]): Section[] {
 
 /* ── on-demand probes (require a user gesture / permission) ──── */
 
-export async function probeGeolocation(): Promise<Section> {
-  const pos: any = await probeAsync(
-    () =>
-      new Promise((res, rej) =>
-        navigator.geolocation.getCurrentPosition(res, rej, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-        })
-      ),
-    12000
-  );
-  const c = pos?.coords;
-  return {
+export async function probeGeolocation(): Promise<GatedResult> {
+  const wrap = (rows: Row[]): Section => ({
     id: "geolocation",
     title: "Geolocation (granted)",
     note: "Device position as reported by the OS location service.",
-    rows: c
-      ? [
-          { k: "latitude", v: c.latitude },
-          { k: "longitude", v: c.longitude },
-          { k: "accuracy", v: `${c.accuracy} m` },
-          { k: "altitude", v: c.altitude },
-          { k: "altitudeAccuracy", v: c.altitudeAccuracy },
-          { k: "heading", v: c.heading },
-          { k: "speed", v: c.speed },
-          { k: "timestamp", v: new Date(pos.timestamp).toISOString() },
-        ]
-      : [{ k: "getCurrentPosition()", v: String(pos ?? "denied") }],
-  };
+    rows,
+  });
+
+  if (!navigator.geolocation) {
+    return {
+      section: wrap([{ k: "navigator.geolocation", v: undefined }]),
+      outcome: "unsupported",
+      reason: "This browser does not expose a location API at all.",
+    };
+  }
+
+  try {
+    const pos = await new Promise<GeolocationPosition>((res, rej) =>
+      navigator.geolocation.getCurrentPosition(res, rej, {
+        enableHighAccuracy: true,
+        timeout: 20000,
+      })
+    );
+    const c = pos.coords;
+    return {
+      section: wrap([
+        { k: "latitude", v: c.latitude },
+        { k: "longitude", v: c.longitude },
+        { k: "accuracy", v: `${c.accuracy} m` },
+        { k: "altitude", v: c.altitude },
+        { k: "altitudeAccuracy", v: c.altitudeAccuracy },
+        { k: "heading", v: c.heading },
+        { k: "speed", v: c.speed },
+        { k: "timestamp", v: new Date(pos.timestamp).toISOString() },
+      ]),
+      outcome: "granted",
+    };
+  } catch (e) {
+    // Code 1 is the only one that means you said no. Code 2 is a machine with
+    // no way to locate itself, code 3 a fix that never arrived — neither is a
+    // refusal, and neither should be reported as one.
+    const err = e as GeolocationPositionError;
+    const outcome = err.code === 1 ? "denied" : "error";
+    const reason =
+      err.code === 1
+        ? undefined
+        : err.code === 2
+          ? "Your operating system could not work out where it is — no satellite, wi-fi or cell fix was available."
+          : "The location fix did not arrive within twenty seconds.";
+    return {
+      section: wrap([{ k: "getCurrentPosition()", v: `error: ${err.message}` }]),
+      outcome,
+      reason,
+    };
+  }
 }
 
-export async function probeLocalFonts(): Promise<Section> {
-  const fonts: any = await probeAsync(() => w().queryLocalFonts?.() ?? Promise.resolve(undefined), 15000);
-  const rows: Row[] = Array.isArray(fonts)
-    ? [
-        { k: "fonts installed", v: fonts.length },
-        { k: "families", v: [...new Set(fonts.map((f: any) => f.family))].length },
-        { k: "full list", v: fonts.map((f: any) => f.fullName).join(", ") },
-      ]
-    : [{ k: "queryLocalFonts()", v: fonts }];
-  return {
+export async function probeLocalFonts(): Promise<GatedResult> {
+  const wrap = (rows: Row[]): Section => ({
     id: "local-fonts",
     title: "Local Fonts (granted)",
     note: "The complete installed font set, straight from the OS — far more precise than width-measurement detection.",
     rows,
-  };
+  });
+
+  if (!w().queryLocalFonts) {
+    return {
+      section: wrap([{ k: "queryLocalFonts()", v: undefined }]),
+      outcome: "unsupported",
+      reason:
+        "Firefox and Safari have both declined to implement this API, on the grounds that the full font list is too identifying to hand over at all.",
+    };
+  }
+
+  try {
+    const fonts: any[] = await w().queryLocalFonts();
+    return {
+      section: wrap([
+        { k: "fonts installed", v: fonts.length },
+        { k: "families", v: [...new Set(fonts.map((f) => f.family))].length },
+        { k: "family list", v: [...new Set(fonts.map((f) => f.family))].join(", ") },
+        { k: "full list", v: fonts.map((f) => f.fullName).join(", ") },
+      ]),
+      outcome: "granted",
+    };
+  } catch (e) {
+    return classifyDomError(e, wrap([{ k: "queryLocalFonts()", v: `error: ${(e as Error).message}` }]));
+  }
 }
 
-export async function probeDeviceLabels(): Promise<Section> {
-  const res: any = await probeAsync(async () => {
-    const stream = await n().mediaDevices.getUserMedia({ audio: true, video: true });
-    const tracks = stream.getTracks();
-    const settings = tracks.map((t: any) => ({
-      kind: t.kind,
-      label: t.label,
-      settings: t.getSettings?.(),
-      capabilities: t.getCapabilities?.(),
-    }));
-    tracks.forEach((t: any) => t.stop());
-    const devices = await n().mediaDevices.enumerateDevices();
-    return { settings, devices };
-  }, 20000);
-
-  const rows: Row[] = [];
-  if (res && typeof res === "object") {
-    for (const s of res.settings) {
-      rows.push({ k: `${s.kind} track label`, v: s.label });
-      rows.push({ k: `${s.kind} settings`, v: s.settings });
-      rows.push({ k: `${s.kind} capabilities`, v: s.capabilities });
-    }
-    res.devices.forEach((d: any, i: number) =>
-      rows.push({ k: `device[${i}] ${d.kind}`, v: d.label, n: `id ${String(d.deviceId).slice(0, 16)}…` })
-    );
-  } else {
-    rows.push({ k: "getUserMedia()", v: String(res ?? "denied") });
-  }
-  return {
+export async function probeDeviceLabels(): Promise<GatedResult> {
+  const wrap = (rows: Row[]): Section => ({
     id: "device-labels",
     title: "Media Device Details (granted)",
     note: "With camera/mic permission the browser reveals hardware names, stable device IDs and full track capabilities.",
     rows,
-  };
+  });
+
+  if (!n().mediaDevices?.getUserMedia) {
+    return {
+      section: wrap([{ k: "getUserMedia()", v: undefined }]),
+      outcome: "unsupported",
+      reason: "This browser exposes no media capture API.",
+    };
+  }
+
+  // A desktop with a microphone but no webcam fails the combined request
+  // outright. Asking for both, then for each alone, is the difference between
+  // "you declined" and the truth.
+  let stream: MediaStream | undefined;
+  let lastError: unknown;
+  for (const constraints of [
+    { audio: true, video: true },
+    { audio: true },
+    { video: true },
+  ]) {
+    try {
+      stream = await n().mediaDevices.getUserMedia(constraints);
+      break;
+    } catch (e) {
+      lastError = e;
+      // A refusal applies to every later attempt; only keep trying when the
+      // hardware, not the person, was missing.
+      if ((e as DOMException).name === "NotAllowedError") break;
+    }
+  }
+
+  if (!stream) {
+    return classifyDomError(
+      lastError,
+      wrap([{ k: "getUserMedia()", v: `error: ${(lastError as Error)?.message ?? "no stream"}` }]),
+      "No camera or microphone is attached to this machine, so there was nothing to ask about."
+    );
+  }
+
+  const rows: Row[] = [];
+  const tracks: any[] = stream.getTracks();
+  for (const t of tracks) {
+    rows.push({ k: `${t.kind} track label`, v: t.label });
+    rows.push({ k: `${t.kind} settings`, v: t.getSettings?.() });
+    rows.push({ k: `${t.kind} capabilities`, v: t.getCapabilities?.() });
+  }
+  tracks.forEach((t) => t.stop());
+
+  const devices: any[] = await n().mediaDevices.enumerateDevices();
+  devices.forEach((d, i) =>
+    rows.push({ k: `device[${i}] ${d.kind}`, v: d.label, n: `id ${String(d.deviceId).slice(0, 16)}…` })
+  );
+
+  return { section: wrap(rows), outcome: "granted" };
 }

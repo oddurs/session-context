@@ -22,18 +22,18 @@ export function SiteHeader({
   ] as const;
 
   return (
-    <header className="pt-12 pb-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3 border-b border-rule pb-3">
+    <header className="pt-section pb-body">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-group gap-y-snug border-b border-ink pb-snug">
         {/* The wordmark identifies the site on both routes; the page's own
             subject is the heading below it. */}
         <Link
           href="/"
-          className="flex items-center gap-2.5 text-[1.9rem] font-semibold leading-none tracking-[-0.025em] no-underline"
+          className="flex items-center gap-snug text-display font-semibold tracking-[-0.025em] no-underline"
         >
           <Logo className="h-8 w-auto shrink-0" />
           Session Context
         </Link>
-        <nav className="flex items-center gap-5 text-sm">
+        <nav className="flex items-center gap-body text-sm">
           {tabs.map((t) => (
             <Link
               key={t.id}
@@ -52,7 +52,7 @@ export function SiteHeader({
               href={REPO_URL}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1.5 text-ink-muted no-underline hover:text-ink hover:underline"
+              className="flex items-center gap-hair text-ink-muted no-underline hover:text-ink hover:underline"
             >
               <Icon name="github" className="size-3.5" />
               Source
@@ -60,12 +60,12 @@ export function SiteHeader({
           )}
         </nav>
       </div>
-      <h1 className="mt-7 max-w-[46ch] text-xl font-medium leading-snug tracking-[-0.015em]">
+      <h1 className="mt-group max-w-title text-xl font-medium tracking-[-0.015em]">
         {title}
       </h1>
-      <p className="mt-3 max-w-[68ch] text-base leading-[1.65] text-ink-muted">{lede}</p>
+      <p className="mt-tight max-w-text text-base text-ink-muted">{lede}</p>
       {note && (
-        <p className="mt-4 max-w-[64ch] border-t border-rule pt-3 text-sm leading-relaxed text-ink-faint">
+        <p className="mt-body max-w-lede border-t border-rule pt-snug text-sm text-ink-faint">
           {note}
           {current === "data" && (
             <>

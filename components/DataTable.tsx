@@ -4,7 +4,6 @@ import { memo, useState } from "react";
 import type { Row, Section } from "@/lib/types";
 import { useFieldNotes } from "@/lib/notes";
 import { LIVE_SECTIONS } from "@/lib/live";
-import { Icon } from "./Icon";
 import { Json, looksLikeJson } from "./Json";
 import { Table, Td, Th, Tooltip, cx } from "./ui";
 
@@ -60,13 +59,23 @@ function Value({ v }: { v: unknown }) {
   );
 }
 
-function Term({ field, sectionId }: { field: string; sectionId?: string }) {
+function Term({
+  field,
+  sectionId,
+  children,
+}: {
+  field: string;
+  sectionId?: string;
+  children: string;
+}) {
   const lookup = useFieldNotes();
   const def = lookup?.(field, sectionId);
-  if (!def) return null;
+  if (!def) return <>{children}</>;
   return (
-    <Tooltip label={def}>
-      <Icon name="info" className="ml-1 size-3 text-ink-faint hover:text-ink" />
+    <Tooltip label={def} wrap>
+      <span className="underline decoration-rule decoration-dotted underline-offset-[3px] transition-colors duration-150 hover:decoration-ink">
+        {children}
+      </span>
     </Tooltip>
   );
 }
@@ -86,53 +95,45 @@ export function DataTable({
   if (!visible.length)
     return <p className="text-sm italic text-ink-faint">Every field here was withheld.</p>;
 
-  // A third column is only worth its width when most rows have something in it.
-  const noted = visible.filter((r) => r.n).length;
-  const noteColumn = noted / visible.length >= 0.25;
-
   return (
-    <Table cols={noteColumn ? ["27%", "auto", "23%"] : ["30%", "auto"]}>
+    <Table cols={["32%", "auto"]}>
       {caption && <caption className="sr-only">{caption}</caption>}
       <thead>
         <tr>
           <Th>Field</Th>
           <Th>Value</Th>
-          {noteColumn && <Th className="hidden sm:table-cell">What it means</Th>}
         </tr>
       </thead>
       <tbody>
         {visible.map((r, i) => {
           const empty = isUnreported(r.v);
           return (
-            <tr key={`${r.k}-${i}`} className="align-top transition-colors duration-100 hover:bg-sunken/60">
-              <Td
-                mono
-                className={cx("break-words", empty ? "text-ink-faint" : "text-ink-muted")}
-              >
-                {r.k}
-                <Term field={r.k} sectionId={sectionId} />
+            <tr
+              key={`${r.k}-${i}`}
+              className="align-top transition-colors duration-100 hover:bg-sunken/60"
+            >
+              <Td mono className={cx("break-words", empty ? "text-ink-faint" : "text-ink-muted")}>
+                <Term field={r.k} sectionId={sectionId}>
+                  {r.k}
+                </Term>
               </Td>
               <Td mono className="text-ink">
                 <Value v={r.v} />
-                {r.n && !noteColumn && (
-                  <span className="mt-0.5 block font-sans text-sm text-ink-faint">{r.n}</span>
-                )}
-                {r.n && noteColumn && (
-                  <span className="mt-0.5 block font-sans text-sm text-ink-faint sm:hidden">
-                    {r.n}
-                  </span>
+                {/*
+                  * A gloss, not a column. These notes are units, caveats and
+                  * provenance about the value — "logical cores", "frozen to
+                  * 'Gecko'", "coarsened against timing attacks" — so they
+                  * belong beside the thing they qualify. As a third column
+                  * they were mostly empty, took a fifth of the width from the
+                  * column that needed it most, appeared in some tables and not
+                  * others, and vanished below the small breakpoint into this
+                  * same inline form. One presentation, every table, every
+                  * width.
+                  */}
+                {r.n && (
+                  <span className="ml-tight font-sans text-sm text-ink-faint">{r.n}</span>
                 )}
               </Td>
-              {noteColumn && (
-                <Td
-                  className={cx(
-                    "hidden font-sans text-sm sm:table-cell",
-                    empty ? "text-ink-faint" : "text-ink-muted"
-                  )}
-                >
-                  {r.n ?? ""}
-                </Td>
-              )}
             </tr>
           );
         })}
@@ -157,17 +158,22 @@ function SectionBlockBase({ section, hideEmpty }: { section: Section; hideEmpty?
   return (
     <section
       id={section.id}
-      className="defer-render mb-10"
+      className="defer-render mb-group"
       style={{ containIntrinsicSize: `auto ${estimateHeight(section, hideEmpty)}px` }}
     >
-      <div className="flex items-baseline justify-between gap-4">
-        <h5 className="flex items-baseline gap-2 text-base font-semibold tracking-tight">
+      <div className="flex items-baseline justify-between gap-body">
+        <h5 className="flex items-baseline gap-tight text-base font-semibold tracking-tight">
           {section.title}
           {LIVE_SECTIONS.has(section.id) && (
             <span
-              className="text-xs font-normal text-ink-faint"
+              className="inline-flex items-baseline gap-hair text-xs font-normal text-ink-faint"
               title="These values update as they change"
             >
+              <span
+                aria-hidden
+                className="size-1 shrink-0 self-center rounded-full bg-ink-faint
+                           motion-safe:animate-[breathe_2.8s_ease-in-out_infinite]"
+              />
               live
             </span>
           )}
@@ -178,7 +184,7 @@ function SectionBlockBase({ section, hideEmpty }: { section: Section; hideEmpty?
         </span>
       </div>
       {section.note && (
-        <p className="mt-1.5 mb-3 max-w-[78ch] text-sm leading-relaxed text-ink-muted">
+        <p className="mt-tight mb-body max-w-wide text-sm text-ink-muted">
           {section.note}
         </p>
       )}

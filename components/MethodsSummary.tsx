@@ -12,7 +12,7 @@ import { Table, Td, Th } from "./ui";
  */
 export function MethodsSummary() {
   return (
-    <section id="index" className="mb-16">
+    <section id="index" className="mb-major">
       <Table cols={["3rem", "auto", "34%", "6.5rem"]}>
         <thead>
           <tr>
@@ -25,7 +25,7 @@ export function MethodsSummary() {
         {CATALOGUE.map((group) => (
           <tbody key={group.id}>
             <tr>
-              <td colSpan={4} className="border-b border-ink pt-6 pb-1.5">
+              <td colSpan={4} className="border-b border-ink pt-group pb-tight">
                 <a
                   href={`#${group.id}`}
                   className="text-sm font-medium no-underline hover:underline"

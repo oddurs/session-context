@@ -49,19 +49,19 @@ export function DesignContents() {
   }, [isWide]);
 
   return (
-    <nav aria-label="Contents" className="mb-10 lg:sticky lg:top-14 lg:mb-0 lg:self-start">
+    <nav aria-label="Contents" className="mb-group lg:sticky lg:top-14 lg:mb-0 lg:self-start">
       <details ref={toc}>
-        <summary className="label flex cursor-pointer list-none items-center justify-between border-b border-rule pb-1.5 lg:pointer-events-none">
+        <summary className="label flex cursor-pointer list-none items-center justify-between border-b border-rule pb-tight lg:pointer-events-none">
           Contents
           <span className="text-ink-faint lg:hidden">{DESIGN_SECTIONS.length} sections</span>
         </summary>
-        <ul className="mt-2 space-y-1 text-sm">
+        <ul className="mt-snug space-y-hair text-sm">
           {DESIGN_SECTIONS.map((s) => (
             <li key={s.id}>
               <a
                 href={`#${s.id}`}
                 className={cx(
-                  "block border-l py-0.5 pl-3 no-underline transition-colors hover:text-ink",
+                  "block border-l py-hair pl-3 no-underline transition-colors hover:text-ink",
                   active === s.id
                     ? "border-ink font-medium text-ink"
                     : "border-transparent text-ink-muted"

@@ -26,6 +26,7 @@ third-party embedding demonstration frames whichever hostname you are not on.
 | Path | Role |
 | --- | --- |
 | `lib/collect.ts` | Orchestrates collection; the passive browser probes; live interaction counters |
+| `lib/gated.ts` | The permission ledger's catalogue: what each capability reveals, what the page already guessed without it, and the resting permission state |
 | `lib/advanced.ts` | Worker cross-check, tamper detection, storage respawn + ETag, system UI, benchmarks, cross-tab, thermal, gated probes |
 | `lib/libs.ts` | FingerprintJS, ua-parser-js, detectIncognito, privacy-posture probes |
 | `lib/findings.ts` | Derives plain-English findings from collected sections; each carries its own evidence |
@@ -34,7 +35,9 @@ third-party embedding demonstration frames whichever hostname you are not on.
 | `lib/css-probes.ts` | The CSS-only fingerprint: one rule per condition, each loading a distinct image |
 | `lib/methods.ts` | Prose for `/methods` |
 | `lib/server-store.ts` | Process-local maps for ETag and CSS-probe records. Never persisted |
+| `components/GatedLedger.tsx` | The permission section: one row per capability, its before/after contrast, and the four outcomes |
 | `components/ui.tsx` | All UI primitives. No component library |
+| `app/globals.css` | The whole design system: ink, type scale, spacing scale, motion. `/design` documents it and must be updated alongside |
 
 Everything client-side flows through `Section[]` (`lib/types.ts`): a section has
 an id, title, note and `Row[]` of `{ k, v, n? }`. `v === undefined` renders as
@@ -48,8 +51,23 @@ an id, title, note and `Row[]` of `{ k, v, n? }`. `v === undefined` renders as
   labels, buttons or tooltips.
 - **No filled controls.** Buttons are hairline outlines or plain text. No black
   fills, no uppercase labels, no letter-spaced eyebrows.
-- **One rule weight per level.** A single `border-ink` hairline under category
-  headings; `border-rule` everywhere else.
+- **Three rule weights, and the axis says the role.** `border-ink` divides
+  top-level parts across (masthead, category headings, the permission
+  boundary) and marks position or emphasis down (the active rail entry, the
+  contrast panel). `border-rule-strong` is the head of a table and the edge of
+  anything you can operate. `border-rule` is everything structural inside
+  content. `/design` enumerates all six roles; adding a rule means picking one
+  of them, not picking a colour.
+- **Eight type sizes, eight spacing steps, both in `@theme`.** Never an
+  arbitrary `text-[…]` or a raw number for vertical rhythm. Spacing steps are
+  named for the relationship they express — `mt-tight` is a heading and its own
+  lede, `mb-block` is a heading block and its content, `mt-section` is section
+  to section — so two places that mean the same thing cannot drift apart. The
+  numeric scale (`py-1`, `px-2.5`) is left for the interior padding of
+  controls, where spacing is optical rather than structural.
+- **Each size carries its own leading.** `leading-*` in markup means this one
+  case genuinely differs; there is currently one, a typing box. Adding a second
+  usually means the size is wrong.
 - **Tables never scroll sideways.** Fixed `colgroup` widths, everything wraps,
   the note column folds under the value below `sm`.
 
@@ -64,7 +82,9 @@ autofill harvesting, history-sniffing side channels, live commercial trackers,
 silent cross-site login detection. Do not add them.
 
 One probe is intrusive (scheme flooding, which can launch desktop apps) and
-stays behind an explicit `confirm()`.
+stays behind an explicit confirmation. That confirmation is in-page, not
+`window.confirm()`: it names every scheme it will try before you agree to any
+of them, which a native alert cannot do, and it reads on touch.
 
 ## Verifying changes
 
@@ -75,6 +95,12 @@ most of this code does nothing under SSR:
 npm run probe                      # drives headless Chrome against localhost:3939
 npm run probe -- <url> <wait-ms>   # exits non-zero on any console error
 ```
+
+A gated probe must never report a refusal that did not happen. `granted`,
+`denied`, `unsupported` and `error` are four different facts about the reader,
+and each probe decides between them where its own `try` sits — not by reading
+its output back afterwards. Check the unsupported paths in Firefox and Safari,
+which implement none of `queryLocalFonts`, `getScreenDetails` or `IdleDetector`.
 
 Watch for hydration mismatches specifically. Three have been introduced and
 fixed here: branching on `location` during render, `Date.now()` inside rendered

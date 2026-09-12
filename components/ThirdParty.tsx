@@ -75,14 +75,14 @@ export function ThirdParty({ onResult }: { onResult: (s: Section) => void }) {
 
   if (origin === undefined)
     return (
-      <Card tone="raised" className="mt-3 mb-10 p-3 text-sm text-ink-faint">
+      <Card tone="raised" className="mt-snug mb-group p-3 text-sm text-ink-faint">
         Preparing the third-party frame…
       </Card>
     );
   if (!origin) return null;
   return (
-    <Card tone="raised" className="mt-3 mb-10 overflow-hidden">
-      <div className="border-b border-rule px-3 py-1.5 text-xs text-ink-muted">
+    <Card tone="raised" className="mt-snug mb-group overflow-hidden">
+      <div className="border-b border-rule px-3 py-tight text-xs text-ink-muted">
         Live third-party frame · {origin}
       </div>
       <iframe

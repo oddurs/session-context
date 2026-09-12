@@ -7,7 +7,7 @@ function Text({ children }: { children: string }) {
     <>
       {children.split(/(`[^`]+`)/g).map((part, i) =>
         part.startsWith("`") && part.endsWith("`") ? (
-          <code key={i} className="font-mono text-[0.95em] text-ink">
+          <code key={i} className="code text-ink">
             {part.slice(1, -1)}
           </code>
         ) : (
@@ -36,20 +36,20 @@ export function MethodEntry({ method }: { method: NumberedMethod }) {
   ];
 
   return (
-    <article id={method.slug} className="border-t border-rule py-6 first:border-t-0 first:pt-3">
+    <article id={method.slug} className="border-t border-rule py-item first:border-t-0 first:pt-0">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-        <h3 className="flex items-baseline gap-3 text-lg font-medium leading-snug tracking-tight">
+        <h3 className="flex items-baseline gap-snug text-lg font-medium tracking-tight">
           <span className="font-mono text-sm text-ink-faint tabular">{method.number}</span>
           {method.name}
         </h3>
         <span className="shrink-0 text-sm text-ink-faint">{method.standing}</span>
       </div>
 
-      <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:pl-[1.75rem]">
+      <dl className="mt-snug grid gap-x-group gap-y-tight sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:pl-[1.75rem]">
         {rows.map((row) => (
           <div key={row.label} className="contents">
             <dt className="text-sm text-ink-faint sm:text-right">{row.label}</dt>
-            <dd className={`max-w-[70ch] text-sm leading-relaxed ${row.tone}`}>
+            <dd className={`max-w-text text-sm ${row.tone}`}>
               <Text>{row.body}</Text>
             </dd>
           </div>
@@ -57,7 +57,7 @@ export function MethodEntry({ method }: { method: NumberedMethod }) {
       </dl>
 
       {method.section && (
-        <div className="mt-3 sm:pl-[10.25rem]">
+        <div className="mt-snug sm:pl-[10.25rem]">
           <a
             href={`/#${method.section}`}
             className="text-sm text-ink-muted no-underline hover:text-ink hover:underline"

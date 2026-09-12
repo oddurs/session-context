@@ -29,20 +29,61 @@
   --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
-  --text-2xs: 10.5px;
+  /*
+   * Eight sizes, each with one job. Nothing on the site may use a size that is
+   * not on this list: an arbitrary value is a role nobody named, and three of
+   * them had already appeared before this was written down.
+   *
+   * Leading tightens as the size grows, because a headline needs less air
+   * between its lines than a paragraph does. Each size carries its own, so
+   * markup rarely has to set `leading-*` at all.
+   */
+  --text-2xs: 10.5px;          /* table micro-caption */
   --text-2xs--line-height: 1.4;
-  --text-xs: 11.5px;
+  --text-xs: 11.5px;           /* labels, captions, state text */
   --text-xs--line-height: 1.45;
-  --text-sm: 12.5px;
-  --text-sm--line-height: 1.5;
-  --text-base: 14px;
-  --text-base--line-height: 1.55;
-  --text-lg: 16px;
-  --text-lg--line-height: 1.45;
-  --text-xl: 20px;
+  --text-sm: 12.5px;           /* body prose, and every data value */
+  --text-sm--line-height: 1.6;
+  --text-base: 14px;           /* lede, and prose that carries a section */
+  --text-base--line-height: 1.6;
+  --text-lg: 16px;             /* finding headline, entry title, stat figure */
+  --text-lg--line-height: 1.4;
+  --text-xl: 20px;             /* section heading */
   --text-xl--line-height: 1.3;
-  --text-2xl: 26px;
+  --text-2xl: 26px;            /* page title */
   --text-2xl--line-height: 1.22;
+  --text-display: 30px;        /* the wordmark, and nothing else */
+  --text-display--line-height: 1;
+
+  /*
+   * Vertical rhythm.
+   *
+   * Spacing was the one part of this system never written down, and it showed:
+   * seventeen different top margins were in use, with the same relationship —
+   * a heading and its own lede — set four different ways in four files.
+   *
+   * These eight steps are named for the relationship they express, not for
+   * their size, so the markup says what it means and two places that mean the
+   * same thing cannot drift apart. Each step is at least 1.4x the one below
+   * it, which is the point at which a gap reads as deliberate rather than as a
+   * rounding error.
+   */
+  /*
+   * Named `body` rather than the more obvious `block`: Tailwind builds an
+   * `inline-<step>` utility for every spacing token, and `--spacing-block`
+   * therefore emitted a second `.inline-block` rule that set inline-size and,
+   * coming later in the sheet, beat the real `display: inline-block`. Every
+   * inline-block on the site collapsed to twenty pixels. No step may be named
+   * after a CSS display keyword.
+   */
+  --spacing-hair: 4px;         /* within one line: a label and its value */
+  --spacing-tight: 6px;        /* a heading and the lede belonging to it */
+  --spacing-snug: 10px;        /* paragraphs of a single thought */
+  --spacing-item: 14px;        /* one row of a list or table to the next */
+  --spacing-body: 20px;        /* a heading block to the body it introduces */
+  --spacing-group: 32px;       /* subsection to subsection */
+  --spacing-section: 56px;     /* section to section */
+  --spacing-major: 80px;       /* top-level region to top-level region */
 
   --radius-sm: 2px;
   --radius-md: 3px;
@@ -51,9 +92,27 @@
      the page, never enough to read as a card. */
   --shadow-pop: 0 2px 10px -6px rgb(22 22 15 / 0.18), 0 1px 2px rgb(22 22 15 / 0.04);
 
+  /*
+   * Measure. Ten different line lengths were in use, and 70ch, 72ch and 74ch
+   * are the same length to any reader — a scale whose steps cannot be told
+   * apart is not a scale. Four, each for a job: headings break early, prose
+   * reads at the standard measure, data runs wide.
+   */
+  --container-title: 46ch;     /* the page title */
+  --container-lede: 58ch;      /* a headline or a statement */
+  --container-text: 72ch;      /* all body prose */
+  --container-wide: 80ch;      /* table notes, and prose set beside data */
+
   --container-page: 1080px;
 
-  /* Height of the sticky bar, plus a little air. Anchors clear it by this. */
+  /*
+    * The sticky bar's content height. It also draws a hairline, so anything
+    * that sticks below it must clear --spacing-bar + 1: the table headers
+    * were pinned three pixels short and spent the whole page underneath it.
+    */
+  --spacing-bar: 46px;
+
+  /* The bar plus a little air. Anchors clear it by this. */
   --nav-offset: 58px;
 }
 
@@ -123,6 +182,15 @@
   .tabular {
     font-variant-numeric: tabular-nums;
   }
+  /*
+   * Code inside a sentence. Relative rather than fixed: mono runs large next
+   * to sans at the same nominal size, and this has to sit correctly inside
+   * whichever of the eight sizes surrounds it.
+   */
+  .code {
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+  }
 }
 
 /* ── print: a reference document should print like one ───────── */
@@ -150,20 +218,22 @@
   }
 }
 
-/* ── tooltip panel, drawn from the trigger's data-tip ─────────── */
+/* ── the one tooltip panel, positioned by TooltipLayer ───────── */
 @layer components {
   /*
-   * An annotation, not a floating card: a single ink hairline on paper, with
-   * no shadow. The rest of the page has no shadows either, and a soft one here
-   * was the only place the design spoke a different language.
+   * An annotation, not a floating card: a hairline on paper. It is a single
+   * fixed element shared by every trigger on the page, so nothing an ancestor
+   * does can clip it, and z-index only has to beat the sticky bar.
    */
-  .tip::after {
-    content: attr(data-tip);
-    position: absolute;
-    left: -0.5rem;
-    top: calc(100% + 7px);
-    z-index: 50;
-    width: min(21rem, 74vw);
+  .tip {
+    cursor: help;
+  }
+
+  #tooltip-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 60;
     padding: 0.5rem 0.7rem;
     border: 1px solid var(--color-rule-strong);
     border-radius: var(--radius-md);
@@ -176,24 +246,20 @@
     line-height: 1.5;
     text-align: left;
     white-space: normal;
-    opacity: 0;
+    /* Hidden rather than removed: it has to be measurable before it is shown. */
     visibility: hidden;
+    opacity: 0;
     translate: 0 -2px;
     transition:
       opacity 120ms ease-out,
       translate 120ms ease-out;
     pointer-events: none;
   }
-  .tip:hover::after,
-  .tip:focus::after,
-  .tip:focus-within::after {
-    translate: 0 0;
-  }
-  .tip:hover::after,
-  .tip:focus::after,
-  .tip:focus-within::after {
-    opacity: 1;
+
+  #tooltip-layer[data-open] {
     visibility: visible;
+    opacity: 1;
+    translate: 0 0;
   }
 }
 
@@ -234,6 +300,20 @@
   }
 }
 
+/*
+ * A slow, shallow pulse on the marker beside a live table: these values are
+ * still changing. Shallower and slower than the busy pulse, because it runs
+ * for as long as the page is open rather than for the length of one action.
+ */
+@keyframes breathe {
+  0%, 100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 /* A short segment sweeping a hairline: work is happening, duration unknown. */
 @keyframes sweep {
   0% {
@@ -259,6 +339,12 @@
     0%,
     100% {
       transform: translateX(150%);
+    }
+  }
+  @keyframes breathe {
+    0%,
+    100% {
+      opacity: 0.7;
     }
   }
 }

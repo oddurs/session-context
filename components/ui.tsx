@@ -55,8 +55,8 @@ export function RuleHeading({
   as?: "h2" | "h3" | "h4";
 }) {
   return (
-    <Tag className={cx("flex items-center gap-3 text-sm font-medium text-ink-muted", className)}>
-      <span className="flex shrink-0 items-center gap-2">{children}</span>
+    <Tag className={cx("flex items-center gap-snug text-sm font-medium text-ink-muted", className)}>
+      <span className="flex shrink-0 items-center gap-tight">{children}</span>
       <span aria-hidden className="h-px flex-1 bg-rule" />
     </Tag>
   );
@@ -76,7 +76,7 @@ export function Badge({
   return (
     <span
       className={cx(
-        "inline-flex items-center gap-1.5 whitespace-nowrap text-xs",
+        "inline-flex items-center gap-hair whitespace-nowrap text-xs",
         tone === "outline"
           ? "border border-rule px-1.5 py-0.5 text-ink-muted"
           : "text-ink-faint",
@@ -131,7 +131,7 @@ export function Button({
       onClick={onClick}
       disabled={disabled}
       className={cx(
-        "inline-flex items-center gap-1.5 bg-transparent text-sm",
+        "inline-flex items-center gap-hair bg-transparent text-sm",
         "transition-[color,background-color,border-color] duration-150 ease-out",
         "disabled:cursor-not-allowed",
         BUTTON_VARIANTS[variant],
@@ -189,7 +189,7 @@ export function Menu({
           setOpen((v) => !v);
         }}
         className={cx(
-          "inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm",
+          "inline-flex items-center gap-hair rounded-md px-1.5 py-1 text-sm",
           "transition-[color,background-color] duration-150 ease-out",
           open ? "bg-sunken text-ink" : "text-ink-muted hover:bg-sunken hover:text-ink"
         )}
@@ -243,7 +243,7 @@ export function MenuItem({
       type="button"
       role="menuitem"
       onClick={onSelect}
-      className="flex w-full items-baseline gap-5 px-3 py-1.5 text-left text-sm text-ink transition-colors duration-100 hover:bg-sunken"
+      className="flex w-full items-baseline gap-body px-3 py-1.5 text-left text-sm text-ink transition-colors duration-100 hover:bg-sunken"
     >
       <span className="flex-1">{children}</span>
       {hint && <span className="font-mono text-xs text-ink-faint">{hint}</span>}
@@ -263,7 +263,7 @@ export function Checkbox({
   children: ReactNode;
 }) {
   return (
-    <label className="group/check inline-flex cursor-pointer select-none items-center gap-2 text-sm text-ink-muted transition-colors duration-150 hover:text-ink">
+    <label className="group/check inline-flex cursor-pointer select-none items-center gap-tight text-sm text-ink-muted transition-colors duration-150 hover:text-ink">
       {/* The mark is always present and only changes opacity, so checking it
           cannot shift the baseline. */}
       <span
@@ -298,23 +298,32 @@ export function Checkbox({
 /* ── tooltip ─────────────────────────────────────────────────── */
 
 /**
- * The panel is drawn by a pseudo-element from `data-tip`, so several hundred
- * tooltips cost one element each instead of an element, a span and a text
- * node. The same text reaches assistive technology through `aria-label`.
+ * A trigger, not a panel. `TooltipLayer` keeps one shared panel at the root of
+ * the document and positions it against the viewport, so nothing here can be
+ * clipped by a table cell and a page of forty tables carries one hidden box
+ * rather than seven hundred. The text reaches assistive technology directly,
+ * through `aria-label` on the trigger.
  */
 export function Tooltip({
   children,
   label,
   focusable,
+  wrap,
 }: {
   children: ReactNode;
   label: string;
   /** Only for tooltips that are the sole source of their information. */
   focusable?: boolean;
+  /**
+   * The trigger is running text rather than a marker, so it has to be able to
+   * break across lines. An inline-flex box cannot, and a long field name
+   * overflowed its column instead of wrapping.
+   */
+  wrap?: boolean;
 }) {
   return (
     <span
-      className="tip relative inline-flex align-middle"
+      className={wrap ? "tip relative inline" : "tip relative inline-flex align-middle"}
       data-tip={label}
       // Hundreds of these appear in the tables. Making each one a tab stop
       // would bury every real control, so the text reaches assistive
@@ -342,7 +351,7 @@ export function Disclosure({
   return (
     <details className={cx("group/disc", className)}>
       <summary
-        className="inline-flex cursor-pointer list-none items-center gap-1 text-sm text-ink-muted
+        className="inline-flex cursor-pointer list-none items-center gap-hair text-sm text-ink-muted
                    marker:content-none hover:text-ink hover:underline"
       >
         <svg
@@ -359,7 +368,7 @@ export function Disclosure({
         </svg>
         {summary}
       </summary>
-      <div className="mt-2">{children}</div>
+      <div className="mt-snug">{children}</div>
     </details>
   );
 }
@@ -393,8 +402,13 @@ export function Table({
 export function Th({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <th
+      scope="col"
       className={cx(
-        "label sticky top-11 z-10 border-b border-rule bg-paper py-2 pr-4 text-left align-bottom font-normal",
+        // The system reserves border-rule-strong for table heads; this one had
+        // been drawing itself at row weight, so a table of thirty identical
+        // hairlines had no top to it.
+        "label sticky top-[calc(var(--spacing-bar)+1px)] z-10 border-b border-rule-strong",
+        "bg-paper pb-tight pt-snug pr-4 text-left align-bottom font-normal",
         className
       )}
     >
@@ -415,7 +429,7 @@ export function Td({
   return (
     <td
       className={cx(
-        "border-b border-rule py-2 pr-4 align-top break-words [overflow-wrap:anywhere]",
+        "border-b border-rule py-tight pr-4 align-top break-words [overflow-wrap:anywhere]",
         mono && "font-mono text-sm",
         className
       )}
@@ -431,7 +445,7 @@ export function Stat({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
       <Label>{label}</Label>
-      <div className="mt-0.5 font-mono text-base tabular">{value}</div>
+      <div className="mt-hair font-mono text-base tabular">{value}</div>
     </div>
   );
 }
@@ -440,7 +454,7 @@ export function Stat({ label, value }: { label: string; value: ReactNode }) {
 
 export function CodeBlock({ children }: { children: string }) {
   return (
-    <pre className="overflow-x-auto rounded-md border border-rule bg-sunken p-3 font-mono text-sm leading-relaxed whitespace-pre">
+    <pre className="overflow-x-auto rounded-md border border-rule bg-sunken p-3 font-mono text-sm whitespace-pre">
       {children}
     </pre>
   );

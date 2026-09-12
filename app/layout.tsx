@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
+import { TooltipLayer } from "@/components/TooltipLayer";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -84,6 +85,7 @@ export default async function RootLayout({
           Skip to content
         </a>
         {children}
+        <TooltipLayer />
       </body>
     </html>
   );

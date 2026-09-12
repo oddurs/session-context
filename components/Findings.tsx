@@ -24,20 +24,39 @@ function Value({ value }: { value: unknown }) {
  * row it stretched the row's height and left the other items floating against
  * its middle.
  */
-function Article({ finding }: { finding: Finding }) {
+export function FindingArticle({
+  finding,
+  compact,
+}: {
+  finding: Finding;
+  /**
+   * Drop the headline and the rule above it. Used where the surrounding
+   * context has already stated the fact — the permission ledger prints the
+   * value in its own contrast panel, and the headline underneath was saying
+   * the same number a second time, under a rule that made two blocks out of
+   * one thought.
+   */
+  compact?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const count = finding.evidence.length;
 
   return (
-    <article className="border-t border-rule py-5 first:border-t-0 first:pt-3">
-      <h4 className="max-w-[58ch] text-lg font-medium leading-snug tracking-tight">
-        {finding.headline}
-      </h4>
-      <p className="mt-2 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
+    <article
+      className={
+        compact ? "" : "border-t border-rule py-item first:border-t-0 first:pt-0"
+      }
+    >
+      {!compact && (
+        <h4 className="max-w-lede text-lg font-medium tracking-tight">
+          {finding.headline}
+        </h4>
+      )}
+      <p className={cx("max-w-text text-sm text-ink-muted", !compact && "mt-tight")}>
         {finding.detail}
       </p>
 
-      <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+      <div className="mt-snug flex flex-wrap items-baseline gap-x-tight gap-y-hair text-sm">
         <span className="text-ink-faint">{finding.how}</span>
         <span aria-hidden className="text-rule-strong">
           ·
@@ -46,7 +65,7 @@ function Article({ finding }: { finding: Finding }) {
           type="button"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className="inline-flex items-baseline gap-1 text-ink-muted hover:text-ink hover:underline"
+          className="inline-flex items-baseline gap-hair text-ink-muted hover:text-ink hover:underline"
         >
           <svg
             viewBox="0 0 16 16"
@@ -68,8 +87,8 @@ function Article({ finding }: { finding: Finding }) {
       </div>
 
       {open && (
-        <div className="mt-3 max-w-[74ch] border-l border-rule pl-4 motion-safe:animate-[rise-in_160ms_ease-out]">
-          <dl className="grid gap-x-6 gap-y-1.5 sm:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]">
+        <div className="mt-snug max-w-text border-l border-rule pl-4 motion-safe:animate-[rise-in_160ms_ease-out]">
+          <dl className="grid gap-x-group gap-y-hair sm:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]">
             {finding.evidence.map((e, i) => (
               <div key={i} className="contents">
                 <dt className="font-mono text-sm break-words text-ink-muted">{e.k}</dt>
@@ -81,7 +100,7 @@ function Article({ finding }: { finding: Finding }) {
           </dl>
           <a
             href={`#${finding.sectionId}`}
-            className="mt-3 inline-block text-sm text-ink-muted no-underline hover:text-ink hover:underline"
+            className="mt-snug inline-block text-sm text-ink-muted no-underline hover:text-ink hover:underline"
           >
             Everything in this table →
           </a>
@@ -113,10 +132,10 @@ export function Findings({
       {present.map((g, index) => (
         <section
           key={g}
-          className="mt-12 first:mt-0 motion-safe:animate-[rise-in_260ms_ease-out] motion-safe:[animation-fill-mode:backwards]"
+          className="mt-section first:mt-0 motion-safe:animate-[rise-in_260ms_ease-out] motion-safe:[animation-fill-mode:backwards]"
           style={stagger ? { animationDelay: `${index * 55}ms` } : undefined}
         >
-          <RuleHeading as="h3" className="mb-1">
+          <RuleHeading as="h3" className="mb-body">
             <Icon name={ICON_FOR_GROUP[g] ?? "info"} className="size-4 text-ink-faint" />
             {g}
           </RuleHeading>
@@ -124,7 +143,7 @@ export function Findings({
             {findings
               .filter((f) => f.group === g)
               .map((f) => (
-                <Article key={f.id} finding={f} />
+                <FindingArticle key={f.id} finding={f} />
               ))}
           </div>
         </section>

@@ -48,3 +48,54 @@ jobs:
         env:
           CHROME_PATH: /usr/bin/google-chrome
         run: npm run probe -- http://localhost:3939/methods 8000
+      - name: And the design notes
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: npm run probe -- http://localhost:3939/design 8000
+
+  smoke:
+    # Railway deploys from main on push, and it does so in parallel with the
+    # jobs above rather than after them. Until "wait for CI" is switched on in
+    # the service's GitHub trigger, this is the backstop: once the new build is
+    # actually answering in production, drive a real browser at it.
+    #
+    # It is worth doing even after that switch is flipped. The failure this
+    # site is most prone to — the page renders, hydration never happens, and
+    # the whole thing sits on its loading state — produces no build error and
+    # no console error. Only a browser finds it, and only against the real
+    # deployment.
+    name: Verify production
+    needs: [check, browser]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Wait for this commit to be live
+        run: |
+          for i in $(seq 1 60); do
+            live=$(curl -sf --max-time 10 "$SITE/api/health" | node -e \
+              'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(JSON.parse(s).commit??"")}catch{}})')
+            if [ "$live" = "$GITHUB_SHA" ]; then
+              echo "live: $live"
+              exit 0
+            fi
+            echo "waiting — production is on ${live:-unknown}, want $GITHUB_SHA"
+            sleep 10
+          done
+          echo "::error::$GITHUB_SHA never reached production"
+          exit 1
+        env:
+          SITE: https://sessioncontext.org
+
+      - name: Drive a real browser at production
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          npm run probe -- https://sessioncontext.org/ 20000
+          npm run probe -- https://sessioncontext.org/methods 8000

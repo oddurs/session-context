@@ -23,27 +23,27 @@ export function TrackerPayloads({ sections }: { sections: Section[] }) {
   if (!mounted || !sections.length) return null;
 
   return (
-    <section id="trackers" className="mb-10">
+    <section id="trackers" className="mb-group">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h5 className="flex items-center gap-2 text-base font-semibold tracking-tight">
+        <h5 className="flex items-center gap-tight text-base font-semibold tracking-tight">
           <Icon name="megaphone" className="size-4 text-ink-muted" />
           What a tracker would send about you
         </h5>
         <Badge>constructed here · never sent</Badge>
       </div>
-      <p className="mt-1.5 mb-4 max-w-[78ch] text-sm leading-relaxed text-ink-muted">
+      <p className="mt-tight mb-body max-w-wide text-sm text-ink-muted">
         These are the actual request shapes used by the most widely deployed
         analytics and advertising tags, filled in with the values collected from
         you on this page. They are rendered for inspection and go nowhere: this
         site never contacts another company.
       </p>
-      <div className="space-y-3">
+      <div className="space-y-body">
         {payloads.map((p) => (
           <Card key={p.id} className="p-4">
             <h4 className="text-base font-medium">{p.vendor}</h4>
-            <p className="mt-1.5 max-w-[76ch] text-sm leading-relaxed text-ink-muted">{p.note}</p>
-            <p className="mt-2 font-mono text-sm text-ink-muted break-all">{p.endpoint}</p>
-            <Disclosure className="mt-2" summary="Show the full payload">
+            <p className="mt-tight max-w-text text-sm text-ink-muted">{p.note}</p>
+            <p className="mt-tight font-mono text-sm text-ink-muted break-all">{p.endpoint}</p>
+            <Disclosure className="mt-snug" summary="Show the full payload">
               {looksLikeJson(p.body) ? <Json value={JSON.parse(p.body)} /> : <CodeBlock>{p.body}</CodeBlock>}
             </Disclosure>
           </Card>

@@ -45,8 +45,8 @@ export function StickyBar({
   }, []);
 
   return (
-    <div className="sticky top-0 z-40 -mx-4 mb-10 border-b border-rule bg-paper px-4 sm:-mx-6 sm:px-6">
-      <div className="mx-auto flex h-[46px] max-w-page items-center gap-4">
+    <div className="sticky top-0 z-40 -mx-4 mb-group border-b border-rule bg-paper px-4 sm:-mx-6 sm:px-6">
+      <div className="mx-auto flex h-bar max-w-page items-center gap-body">
         {/*
           * The wordmark is the way back to the top of whatever you are
           * reading — which is where the masthead, and therefore the page
@@ -64,7 +64,7 @@ export function StickyBar({
             "group/top",
             // Collapses to nothing at rest so the section label keeps the left
             // margin, then widens as the masthead leaves.
-            "flex shrink-0 items-center gap-2 overflow-hidden whitespace-nowrap no-underline",
+            "flex shrink-0 items-center gap-tight overflow-hidden whitespace-nowrap no-underline",
             "transition-[max-width,opacity] duration-300 ease-out",
             detached ? "max-w-[16rem] opacity-100" : "pointer-events-none max-w-0 opacity-0"
           )}
@@ -98,7 +98,7 @@ export function StickyBar({
         <nav
           aria-label="Pages"
           className={cx(
-            "ml-auto flex shrink-0 items-center gap-5 overflow-hidden whitespace-nowrap",
+            "ml-auto flex shrink-0 items-center gap-body overflow-hidden whitespace-nowrap",
             "transition-[max-width,opacity] duration-300 ease-out",
             detached ? "max-w-[18rem] opacity-100" : "pointer-events-none max-w-0 opacity-0"
           )}

@@ -1,3 +1,5 @@
+import type { GatedResult, Section } from "./types";
+
 
 /** Read a possibly-missing value without throwing. `undefined` = unsupported. */
 export function probe<T>(fn: () => T): T | string | undefined {
@@ -24,3 +26,28 @@ export async function probeAsync<T>(
 }
 
 export const list = (a: unknown) => (Array.isArray(a) ? a.join(", ") : a);
+
+/**
+ * Turn a failed gated call into an honest outcome.
+ *
+ * `NotAllowedError` is the only name that means a person said no — or that the
+ * browser refused on their behalf. `NotFoundError` and `NotSupportedError`
+ * mean the capability was never there to grant. Everything else is a fault,
+ * and saying so beats blaming the reader for it.
+ */
+export function classifyDomError(
+  e: unknown,
+  section: Section,
+  missingReason = "This browser or machine does not provide it."
+): GatedResult {
+  const name = (e as DOMException)?.name;
+  if (name === "NotAllowedError" || name === "SecurityError")
+    return { section, outcome: "denied" };
+  if (name === "NotFoundError" || name === "NotSupportedError" || name === "TypeError")
+    return { section, outcome: "unsupported", reason: missingReason };
+  return {
+    section,
+    outcome: "error",
+    reason: `The call failed: ${(e as Error)?.message ?? "unknown error"}.`,
+  };
+}

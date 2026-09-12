@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { Row, Section } from "./types";
-import { list, probe, probeAsync } from "./probe";
+import type { GatedResult, Row, Section } from "./types";
+import { classifyDomError, list, probe, probeAsync } from "./probe";
 
 const w = () => window as any;
 const n = () => navigator as any;
@@ -277,7 +277,15 @@ async function swExchange(id?: string): Promise<string | null | "unsupported"> {
   if (!("serviceWorker" in navigator)) return "unsupported";
   try {
     const reg = await navigator.serviceWorker.register("/sw.js");
-    await navigator.serviceWorker.ready;
+    // `ready` never rejects: in a browser that will not activate a worker —
+    // Firefox in a private window, a hardened profile, anything with service
+    // workers switched off — it simply never resolves. Waiting on it without
+    // a bound stalled the whole page.
+    const active = await Promise.race([
+      navigator.serviceWorker.ready.then(() => true),
+      new Promise<false>((resolve) => setTimeout(() => resolve(false), 2000)),
+    ]);
+    if (!active) return "unsupported";
     const worker = reg.active ?? navigator.serviceWorker.controller;
     if (!worker) return null;
     const ask = (msg: any) =>
@@ -592,120 +600,208 @@ export async function mediaCapabilitiesSection(): Promise<Section> {
   };
 }
 
-/* ── gated: screen details, clipboard, idle ──────────────────── */
+/* ── gated: screen details, clipboard, idle, sensors ─────────── */
 
-export async function probeScreenDetails(): Promise<Section> {
-  const rows: Row[] = [];
+export async function probeScreenDetails(): Promise<GatedResult> {
+  const wrap = (rows: Row[]): Section => ({
+    id: "screen-details",
+    title: "Multi-Screen Details (granted)",
+    note: "The Window Management permission reveals every attached display: resolution, position in the virtual desktop, color depth and manufacturer label.",
+    rows,
+  });
+
+  if (!w().getScreenDetails) {
+    return {
+      section: wrap([{ k: "getScreenDetails()", v: undefined }]),
+      outcome: "unsupported",
+      reason:
+        "Window Management ships in Chromium only. Firefox and Safari have not implemented it.",
+    };
+  }
+
   try {
     const det = await w().getScreenDetails();
-    rows.push(
+    const rows: Row[] = [
       { k: "screens attached", v: det.screens.length },
-      { k: "current screen label", v: det.currentScreen?.label }
-    );
+      { k: "current screen label", v: det.currentScreen?.label },
+    ];
     det.screens.forEach((s: any, i: number) => {
       rows.push({
         k: `screen[${i}] ${s.label || "(unlabeled)"}`,
         v: `${s.width}×${s.height} @ (${s.left},${s.top}) · avail ${s.availWidth}×${s.availHeight} · ${s.colorDepth}-bit · ${s.devicePixelRatio}x${s.isPrimary ? " · primary" : ""}${s.isInternal ? " · internal" : ""}`,
       });
     });
+    return { section: wrap(rows), outcome: "granted" };
   } catch (e) {
-    rows.push({ k: "getScreenDetails()", v: `error: ${(e as Error).message}` });
+    return classifyDomError(e, wrap([{ k: "getScreenDetails()", v: `error: ${(e as Error).message}` }]));
   }
-  return {
-    id: "screen-details",
-    title: "Multi-Screen Details (granted)",
-    note: "The Window Management permission reveals every attached display: resolution, position in the virtual desktop, color depth and manufacturer label.",
-    rows,
-  };
 }
 
-export async function probeClipboard(): Promise<Section> {
-  const rows: Row[] = [];
-  try {
-    const text = await n().clipboard.readText();
-    rows.push(
-      { k: "clipboard length", v: text.length },
-      { k: "clipboard contents", v: text.slice(0, 2000) || "(empty)" }
-    );
-  } catch (e) {
-    rows.push({ k: "clipboard.readText()", v: `error: ${(e as Error).message}` });
+export async function probeClipboard(): Promise<GatedResult> {
+  const wrap = (rows: Row[]): Section => ({
+    id: "clipboard",
+    title: "Clipboard Contents (granted)",
+    note: "With clipboard-read permission a page can silently read whatever you last copied — frequently a password, address or message.",
+    rows,
+  });
+
+  if (!n().clipboard?.readText) {
+    return {
+      section: wrap([{ k: "clipboard.readText()", v: undefined }]),
+      outcome: "unsupported",
+      reason: "This browser does not expose asynchronous clipboard reading to pages.",
+    };
   }
+
+  let text: string;
+  try {
+    text = await n().clipboard.readText();
+  } catch (e) {
+    return classifyDomError(e, wrap([{ k: "clipboard.readText()", v: `error: ${(e as Error).message}` }]));
+  }
+
+  const rows: Row[] = [
+    { k: "clipboard length", v: text.length },
+    { k: "clipboard contents", v: text.slice(0, 2000) || "(empty)" },
+  ];
   try {
     const items = await n().clipboard.read();
     rows.push({ k: "clipboard item types", v: items.flatMap((i: any) => i.types).join(", ") });
   } catch {
     /* text-only browsers */
   }
-  return {
-    id: "clipboard",
-    title: "Clipboard Contents (granted)",
-    note: "With clipboard-read permission a page can silently read whatever you last copied — frequently a password, address or message.",
-    rows,
-  };
+  return { section: wrap(rows), outcome: "granted" };
 }
 
-export async function probeIdle(): Promise<Section> {
-  const rows: Row[] = [];
-  try {
-    const ID = w().IdleDetector;
-    if (!ID) throw new Error("IdleDetector unsupported");
-    const state = await ID.requestPermission();
-    rows.push({ k: "permission", v: state });
-    if (state === "granted") {
-      const d = new ID();
-      await d.start({ threshold: 60000 });
-      rows.push(
-        { k: "user state", v: d.userState, n: "active / idle" },
-        { k: "screen state", v: d.screenState, n: "locked / unlocked" }
-      );
-    }
-  } catch (e) {
-    rows.push({ k: "IdleDetector", v: `error: ${(e as Error).message}` });
-  }
-  return {
+export async function probeIdle(): Promise<GatedResult> {
+  const wrap = (rows: Row[]): Section => ({
     id: "idle",
     title: "Idle & Lock State (granted)",
     note: "Idle Detection reports whether you are at the keyboard and whether the screen is locked — continuously, in the background.",
     rows,
-  };
+  });
+
+  const ID = w().IdleDetector;
+  if (!ID) {
+    return {
+      section: wrap([{ k: "IdleDetector", v: undefined }]),
+      outcome: "unsupported",
+      reason:
+        "Idle Detection ships in Chromium only. Mozilla and Apple both filed formal objections to it, calling it surveillance-shaped.",
+    };
+  }
+
+  try {
+    const state = await ID.requestPermission();
+    if (state !== "granted") {
+      return { section: wrap([{ k: "permission", v: state }]), outcome: "denied" };
+    }
+    const d = new ID();
+    await d.start({ threshold: 60000 });
+    return {
+      section: wrap([
+        { k: "permission", v: state },
+        { k: "user state", v: d.userState, n: "active / idle" },
+        { k: "screen state", v: d.screenState, n: "locked / unlocked" },
+      ]),
+      outcome: "granted",
+    };
+  } catch (e) {
+    return classifyDomError(e, wrap([{ k: "IdleDetector", v: `error: ${(e as Error).message}` }]));
+  }
 }
 
-export async function probeSensors(): Promise<Section> {
-  const rows: Row[] = [];
-  const DOE = w().DeviceOrientationEvent;
-  try {
-    if (DOE?.requestPermission) {
-      rows.push({ k: "DeviceOrientation permission", v: await DOE.requestPermission() });
-    } else {
-      rows.push({ k: "DeviceOrientation permission", v: "not required on this platform" });
-    }
-  } catch (e) {
-    rows.push({ k: "DeviceOrientation permission", v: `error: ${(e as Error).message}` });
-  }
-  const sample = await new Promise<string>((resolve) => {
-    const h = (e: any) => {
-      resolve(`α ${e.alpha?.toFixed(2)} β ${e.beta?.toFixed(2)} γ ${e.gamma?.toFixed(2)} absolute=${e.absolute}`);
-      removeEventListener("deviceorientation", h);
+/** Wait for one event of a kind, or give up. */
+function firstEvent(type: string, ms: number): Promise<any | undefined> {
+  return new Promise((resolve) => {
+    const done = (e?: any) => {
+      removeEventListener(type, handler);
+      clearTimeout(timer);
+      resolve(e);
     };
-    addEventListener("deviceorientation", h);
-    setTimeout(() => resolve("no event within 3 s (no sensor or not permitted)"), 3000);
+    const handler = (e: any) => done(e);
+    addEventListener(type, handler);
+    const timer = setTimeout(() => done(undefined), ms);
   });
-  rows.push({ k: "orientation sample", v: sample });
-  const motion = await new Promise<string>((resolve) => {
-    const h = (e: any) => {
-      resolve(`accel ${e.acceleration?.x?.toFixed(3)}/${e.acceleration?.y?.toFixed(3)}/${e.acceleration?.z?.toFixed(3)} · gravity ${e.accelerationIncludingGravity?.x?.toFixed(3)} · rate ${e.rotationRate?.alpha?.toFixed(3)} · interval ${e.interval}`);
-      removeEventListener("devicemotion", h);
-    };
-    addEventListener("devicemotion", h);
-    setTimeout(() => resolve("no event within 3 s"), 3000);
-  });
-  rows.push({ k: "motion sample", v: motion });
-  return {
+}
+
+export async function probeSensors(): Promise<GatedResult> {
+  const wrap = (rows: Row[]): Section => ({
     id: "sensors",
     title: "Motion & Orientation Sensors (granted)",
     note: "Accelerometer and gyroscope readings. Sensor calibration noise is unique per physical device and survives every browser reset.",
     rows,
-  };
+  });
+
+  const DOE = w().DeviceOrientationEvent;
+  if (!DOE) {
+    return {
+      section: wrap([{ k: "DeviceOrientationEvent", v: undefined }]),
+      outcome: "unsupported",
+      reason: "This browser exposes no motion or orientation events.",
+    };
+  }
+
+  const rows: Row[] = [];
+  if (DOE.requestPermission) {
+    // iOS is the only platform that asks. Everywhere else the events simply
+    // flow, or the hardware is not there.
+    let state: string;
+    try {
+      state = await DOE.requestPermission();
+    } catch (e) {
+      return classifyDomError(e, wrap([{ k: "DeviceOrientation permission", v: `error: ${(e as Error).message}` }]));
+    }
+    rows.push({ k: "DeviceOrientation permission", v: state });
+    if (state !== "granted") return { section: wrap(rows), outcome: "denied" };
+  } else {
+    rows.push({ k: "DeviceOrientation permission", v: "not required on this platform" });
+  }
+
+  const orientation = await firstEvent("deviceorientation", 3000);
+  const motion = await firstEvent("devicemotion", 3000);
+
+  // A desktop does not stay silent: Chrome fires `devicemotion` on a timer
+  // with every reading null, because the event exists and the hardware does
+  // not. An event with nothing in it is the same fact as no event at all, and
+  // reporting it as a working sensor would be the exact failure this section
+  // is supposed to argue against.
+  const n3 = (v: any) => (typeof v === "number" ? v.toFixed(3) : undefined);
+  const n2 = (v: any) => (typeof v === "number" ? v.toFixed(2) : undefined);
+  const orientationRead = [orientation?.alpha, orientation?.beta, orientation?.gamma].some(
+    (v) => typeof v === "number"
+  );
+  const motionRead = [
+    motion?.acceleration?.x,
+    motion?.acceleration?.y,
+    motion?.acceleration?.z,
+    motion?.accelerationIncludingGravity?.x,
+    motion?.rotationRate?.alpha,
+  ].some((v) => typeof v === "number");
+
+  if (!orientationRead && !motionRead) {
+    rows.push({ k: "orientation sample", v: undefined }, { k: "motion sample", v: undefined });
+    return {
+      section: wrap(rows),
+      outcome: "unsupported",
+      reason:
+        "The events fired, but every reading in them was empty — which on a desktop or laptop means there is no accelerometer or gyroscope behind them. On a phone this returns real numbers immediately.",
+    };
+  }
+
+  rows.push({
+    k: "orientation sample",
+    v: orientationRead
+      ? `α ${n2(orientation.alpha)} β ${n2(orientation.beta)} γ ${n2(orientation.gamma)} absolute=${orientation.absolute}`
+      : undefined,
+  });
+  rows.push({
+    k: "motion sample",
+    v: motionRead
+      ? `accel ${n3(motion.acceleration?.x)}/${n3(motion.acceleration?.y)}/${n3(motion.acceleration?.z)} · gravity ${n3(motion.accelerationIncludingGravity?.x)} · rate ${n3(motion.rotationRate?.alpha)} · interval ${motion.interval}`
+      : undefined,
+  });
+  return { section: wrap(rows), outcome: "granted" };
 }
 
 /* ── cross-tab awareness ─────────────────────────────────────── */
@@ -831,7 +927,7 @@ export async function thermalSection(): Promise<Section> {
 
 /* ── gated: installed desktop applications ───────────────────── */
 
-const SCHEMES: [string, string][] = [
+export const SCHEMES: [string, string][] = [
   ["slack", "Slack"],
   ["zoommtg", "Zoom"],
   ["spotify", "Spotify"],
@@ -854,7 +950,7 @@ const SCHEMES: [string, string][] = [
  * This is the one intrusive probe on the page: a hit can genuinely launch the
  * application. It only ever runs behind an explicit confirmation.
  */
-export async function probeSchemes(): Promise<Section> {
+export async function probeSchemes(): Promise<GatedResult> {
   const rows: Row[] = [];
   for (const [scheme, name] of SCHEMES) {
     const detected = await new Promise<boolean>((resolve) => {
@@ -888,69 +984,161 @@ export async function probeSchemes(): Promise<Section> {
     n: "heuristic — results vary by browser",
   });
   return {
-    id: "schemes",
-    title: "Installed Desktop Applications (granted)",
-    note: "Detected by asking the browser to open each application's own URL scheme and watching whether this window lost focus. Browsers have tightened this repeatedly because it reveals software you never told the web about.",
-    rows,
+    section: {
+      id: "schemes",
+      title: "Installed Desktop Applications (granted)",
+      note: "Detected by asking the browser to open each application's own URL scheme and watching whether this window lost focus. Browsers have tightened this repeatedly because it reveals software you never told the web about.",
+      rows,
+    },
+    // There is no permission here to grant or refuse — that is the point of
+    // the technique, and why browsers keep narrowing it.
+    outcome: "granted",
   };
 }
 
 /* ── the remedy ──────────────────────────────────────────────── */
 
-export type ErasureResult = { store: string; cleared: boolean; note?: string };
+export type ErasureResult = {
+  store: string;
+  /** the identifier this store held before the attempt */
+  before?: string;
+  /** what a fresh read found afterwards — undefined means it is gone */
+  after?: string;
+  cleared: boolean;
+  note?: string;
+};
+
+/** The service worker keeps its copy in an ordinary cache, readable from here. */
+async function swCacheGet(): Promise<string | undefined> {
+  try {
+    const hit = await (await caches.open("dm-sw-id")).match("/__id");
+    return hit ? await hit.text() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const cookieId = () =>
+  document.cookie.split("; ").find((c) => c.startsWith(`${ID_KEY}=`))?.split("=")[1];
 
 /**
  * Undo what this page stored.
  *
- * A page that demonstrates respawning identifiers should be able to remove
- * them, and watching how many separate places have to be cleared is itself
- * the lesson. One store cannot be reached from JavaScript at all, and saying
- * so is more honest than quietly leaving it out.
+ * Every store is read before, cleared, and read again: "cleared" is a
+ * measurement rather than a claim that a call did not throw. The page argues
+ * all the way through that you should be shown the values behind a statement,
+ * and this was the one statement it was asking you to take on trust.
+ *
+ * Watching how many separate places have to be emptied is the lesson, so each
+ * result is reported as it lands rather than all of them at the end.
  */
-export async function eraseEverything(): Promise<ErasureResult[]> {
+export async function eraseEverything(
+  onResult?: (result: ErasureResult) => void
+): Promise<ErasureResult[]> {
   const results: ErasureResult[] = [];
-  const record = (store: string, fn: () => void | Promise<void>, note?: string) =>
-    Promise.resolve()
-      .then(fn)
-      .then(() => results.push({ store, cleared: true, note }))
-      .catch((e) => results.push({ store, cleared: false, note: (e as Error).message }));
 
-  await record("Cookies", () => {
+  const step = async (
+    store: string,
+    read: () => Promise<string | undefined> | string | undefined,
+    clear: () => void | Promise<void>,
+    note?: string
+  ) => {
+    const before = (await read()) ?? undefined;
+    let failure: string | undefined;
+    try {
+      await clear();
+    } catch (e) {
+      failure = (e as Error).message;
+    }
+    const after = (await read()) ?? undefined;
+    const result: ErasureResult = {
+      store,
+      before,
+      after,
+      cleared: !after,
+      note: failure ?? note,
+    };
+    results.push(result);
+    onResult?.(result);
+    return result;
+  };
+
+  await step("Cookies", cookieId, () => {
     for (const cookie of document.cookie.split(";")) {
       const name = cookie.split("=")[0]?.trim();
       if (name) document.cookie = `${name}=; Max-Age=0; path=/`;
     }
   });
 
-  await record("localStorage", () => localStorage.clear());
-  await record("sessionStorage", () => sessionStorage.clear());
+  await step(
+    "localStorage",
+    () => safe(() => localStorage.getItem(ID_KEY)) ?? undefined,
+    () => localStorage.clear()
+  );
 
-  await record("IndexedDB", async () => {
+  await step(
+    "sessionStorage",
+    () => safe(() => sessionStorage.getItem(ID_KEY)) ?? undefined,
+    () => sessionStorage.clear()
+  );
+
+  await step("IndexedDB", idbGet, async () => {
     const dbs = await (indexedDB as unknown as {
       databases?: () => Promise<{ name?: string }[]>;
     }).databases?.();
-    for (const db of dbs ?? []) if (db.name) indexedDB.deleteDatabase(db.name);
+    // Firefox does not implement databases(); the one this page made is known
+    // by name, so it can be removed without enumerating.
+    for (const db of dbs ?? [{ name: "dm_store" }]) {
+      if (db.name) {
+        await new Promise<void>((resolve) => {
+          const req = indexedDB.deleteDatabase(db.name!);
+          req.onsuccess = req.onerror = req.onblocked = () => resolve();
+        });
+      }
+    }
   });
 
-  await record("Cache Storage", async () => {
+  await step("Cache Storage", cacheGet, async () => {
     for (const key of await caches.keys()) await caches.delete(key);
   });
 
-  await record("Service worker", async () => {
+  // Unregistering leaves the worker's cache behind, and the cache is where the
+  // identifier actually is. Both have to go, and they are cleared by different
+  // controls in every browser's settings.
+  await step("Service worker", swCacheGet, async () => {
     const registrations = await navigator.serviceWorker?.getRegistrations?.();
     for (const registration of registrations ?? []) await registration.unregister();
+    await caches.delete("dm-sw-id");
   });
 
-  await record("window.name", () => {
-    window.name = "";
-  });
+  await step(
+    "window.name",
+    () => (window.name.startsWith(`${ID_KEY}:`) ? window.name.slice(ID_KEY.length + 1) : undefined),
+    () => {
+      window.name = "";
+    }
+  );
 
-  // The ETag identifier lives in the HTTP cache, which no page can clear.
-  results.push({
-    store: "HTTP cache (ETag)",
-    cleared: false,
-    note: "No page can clear the browser cache. This one survives everything above, and goes only when you clear the cache yourself.",
-  });
+  // The eighth copy is not site data at all. Asking the server for it again is
+  // the proof: the same identifier comes back, because the browser still has
+  // the response cached and hands its tag over on every revalidation.
+  const etag = await step(
+    "HTTP cache (ETag)",
+    async () => {
+      try {
+        const res = await fetch("/api/etag", { cache: "default" });
+        return (await res.json()).id as string | undefined;
+      } catch {
+        return undefined;
+      }
+    },
+    () => {
+      /* there is nothing to call: no page can clear the browser cache */
+    },
+    "No page can clear the HTTP cache. This one goes only when you clear the cache yourself, from your browser's own settings."
+  );
+  void etag;
 
   return results;
 }
+

@@ -41,12 +41,64 @@ const PAPER = [
 ];
 
 const TYPE = [
-  { token: "--text-2xl", px: "26px", use: "Page title", className: "text-2xl font-semibold tracking-tight" },
-  { token: "--text-xl", px: "20px", use: "Section heading", className: "text-xl font-semibold tracking-tight" },
-  { token: "--text-lg", px: "16px", use: "Finding headline, entry title", className: "text-lg font-medium" },
-  { token: "--text-base", px: "14px", use: "Body prose", className: "text-base" },
-  { token: "--text-sm", px: "12.5px", use: "Secondary prose, all data values", className: "text-sm" },
-  { token: "--text-xs", px: "11.5px", use: "Captions and labels", className: "text-xs" },
+  { token: "--text-display", px: "30 / 1.0", use: "The wordmark, and nothing else", className: "text-display font-semibold tracking-[-0.025em]" },
+  { token: "--text-2xl", px: "26 / 1.22", use: "Page title", className: "text-2xl font-semibold tracking-tight" },
+  { token: "--text-xl", px: "20 / 1.3", use: "Section heading", className: "text-xl font-semibold tracking-tight" },
+  { token: "--text-lg", px: "16 / 1.4", use: "Finding headline, entry title, stat figure", className: "text-lg font-medium" },
+  { token: "--text-base", px: "14 / 1.6", use: "Lede, and prose that carries a section", className: "text-base" },
+  { token: "--text-sm", px: "12.5 / 1.6", use: "Body prose, and every data value", className: "text-sm" },
+  { token: "--text-xs", px: "11.5 / 1.45", use: "Labels, captions, state text", className: "text-xs" },
+  { token: "--text-2xs", px: "10.5 / 1.4", use: "Table micro-caption", className: "text-2xs" },
+];
+
+/**
+ * Three rule weights, and what each one is allowed to divide.
+ *
+ * Two of these had drifted before this was written down: the masthead drew
+ * itself at row weight, so the page had no head, and the permission boundary —
+ * the strongest claim on the site — was bracketed in the same hairline used
+ * for table rows.
+ */
+const WEIGHTS = [
+  {
+    token: "border-ink",
+    swatch: "bg-ink",
+    across:
+      "A division between top-level parts: under the masthead, above each category of data, and bracketing the permission boundary.",
+    down: "Where you are — the active entry in a contents rail — and the one passage that carries a section, such as the before/after contrast in the permission ledger.",
+  },
+  {
+    token: "border-rule-strong",
+    swatch: "bg-rule-strong",
+    across: "The head of a table, which has to read as a head and not as one more row.",
+    down: "The edge of anything you can operate: buttons, the menu panel, the checkbox, the typing box. Also the underline beneath links and in-text controls.",
+  },
+  {
+    token: "border-rule",
+    swatch: "bg-rule",
+    across:
+      "Everything structural inside content: table rows, a note set off from the block above it, card edges, and the trailing hairline of a ruled heading.",
+    down: "Supporting detail quoted beside the text — the evidence behind a finding, the outcome of a refused prompt.",
+  },
+];
+
+/**
+ * The scale nobody had written down.
+ *
+ * Named for the relationship each step expresses rather than for its size, so
+ * two places that mean the same thing cannot drift apart — which is exactly
+ * what had happened: seventeen different top margins, and a heading and its
+ * own lede set four different ways in four files.
+ */
+const SPACE = [
+  { token: "--spacing-hair", px: 4, use: "Within one line: a label and its value" },
+  { token: "--spacing-tight", px: 6, use: "A heading and the lede belonging to it" },
+  { token: "--spacing-snug", px: 10, use: "Paragraphs of a single thought" },
+  { token: "--spacing-item", px: 14, use: "One row of a list or table to the next" },
+  { token: "--spacing-body", px: 20, use: "A heading block to the body it introduces" },
+  { token: "--spacing-group", px: 32, use: "Subsection to subsection" },
+  { token: "--spacing-section", px: 56, use: "Section to section" },
+  { token: "--spacing-major", px: 80, use: "Top-level region to top-level region" },
 ];
 
 const ICONS: IconName[] = [
@@ -58,7 +110,7 @@ const ICONS: IconName[] = [
 
 export default function DesignPage() {
   return (
-    <main id="main" className="mx-auto max-w-page px-4 pb-24 sm:px-6">
+    <main id="main" className="mx-auto max-w-page px-4 pb-major sm:px-6">
       <SiteHeader
         current="none"
         title="Design notes"
@@ -66,16 +118,16 @@ export default function DesignPage() {
         note="Not linked from anywhere. It exists to be checked against."
       />
 
-      <dl className="grid grid-cols-2 gap-y-4 border-b border-rule py-4 sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-y-body border-b border-rule py-body sm:grid-cols-4">
         {[
           { label: "Ink values", value: 4 },
-          { label: "Type sizes", value: 7 },
+          { label: "Type sizes", value: 8 },
+          { label: "Spacing steps", value: 8 },
           { label: "Primitives", value: 11 },
-          { label: "Dependencies", value: "1 icon set" },
         ].map((d, i) => (
-          <div key={d.label} className={i > 0 ? "min-w-0 border-l border-rule pl-5" : "min-w-0"}>
+          <div key={d.label} className={i > 0 ? "min-w-0 border-l border-rule pl-body" : "min-w-0"}>
             <dt className="text-xs text-ink-faint">{d.label}</dt>
-            <dd className="mt-1 text-[1.05rem] font-medium leading-none tracking-[-0.01em] tabular">
+            <dd className="mt-hair text-lg font-medium leading-none tracking-[-0.01em] tabular">
               {d.value}
             </dd>
           </div>
@@ -84,17 +136,17 @@ export default function DesignPage() {
 
       <DesignBar />
 
-      <div className="lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
+      <div className="lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-section">
         <DesignContents />
 
         <div className="min-w-0">
           {/* ── principles ─────────────────────────────────── */}
-          <section id="principles" className="mt-12 first:mt-0">
-            <RuleHeading as="h2" className="mb-2">
+          <section id="principles" className="mt-section first:mt-0">
+            <RuleHeading as="h2" className="mb-tight">
               <Icon name="book" className="size-4 text-ink-faint" />
               Principles
             </RuleHeading>
-            <ol className="max-w-[72ch] text-sm leading-relaxed text-ink-muted">
+            <ol className="max-w-text text-sm text-ink-muted">
               {[
                 ["Monochrome.", "Meaning comes from weight, size and rule, never hue. A page about entropy should not spend attention on decoration."],
                 ["Mono is for data.", "Values, field names, URLs and code. Never prose, labels, buttons or tooltips."],
@@ -103,7 +155,7 @@ export default function DesignPage() {
                 ["Tables never scroll sideways.", "Fixed columns, wrapping cells, and notes that fold under the value on narrow screens."],
                 ["Motion explains or does not happen.", "A sweep means work is running; a rise means content resolved. Everything else is still."],
               ].map(([title, body]) => (
-                <li key={title} className="border-t border-rule py-3 first:border-t-0 first:pt-0">
+                <li key={title} className="border-t border-rule py-item first:border-t-0 first:pt-0">
                   <span className="font-medium text-ink">{title}</span> {body}
                 </li>
               ))}
@@ -111,18 +163,18 @@ export default function DesignPage() {
           </section>
 
           {/* ── color ──────────────────────────────────────── */}
-          <section id="color" className="mt-12">
-            <RuleHeading as="h2" className="mb-2">
+          <section id="color" className="mt-section">
+            <RuleHeading as="h2" className="mb-tight">
               <Icon name="brush" className="size-4 text-ink-faint" />
               Ink and paper
             </RuleHeading>
-            <p className="mb-5 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
+            <p className="mb-body max-w-text text-sm text-ink-muted">
               Four inks and four papers, all warm neutrals. Contrast is measured
               against the page color: body inks clear 4.5:1, and the border ink
               clears the 3:1 required of interactive outlines.
             </p>
 
-            <Label className="mb-2">Ink</Label>
+            <Label className="mb-tight">Ink</Label>
             <Table cols={["12%", "26%", "auto", "14%"]}>
               <thead>
                 <tr>
@@ -149,7 +201,7 @@ export default function DesignPage() {
               </tbody>
             </Table>
 
-            <Label className="mt-6 mb-2">Paper</Label>
+            <Label className="mt-group mb-tight">Paper</Label>
             <Table cols={["12%", "26%", "auto"]}>
               <tbody>
                 {PAPER.map((c) => (
@@ -169,29 +221,37 @@ export default function DesignPage() {
           </section>
 
           {/* ── type ───────────────────────────────────────── */}
-          <section id="type" className="mt-12">
-            <RuleHeading as="h2" className="mb-2">Type</RuleHeading>
-            <p className="mb-5 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
+          <section id="type" className="mt-section">
+            <RuleHeading as="h2" className="mb-tight">Type</RuleHeading>
+            <p className="mb-body max-w-text text-sm text-ink-muted">
               The system font stack for everything a person reads, and the
               system monospace for everything a machine produced. No web fonts
               are loaded, which is both a performance decision and a
               fingerprinting one: a custom font would be one more thing to
               measure.
             </p>
+            <p className="mb-body max-w-text text-sm text-ink-muted">
+              Eight sizes, each with one job, listed with the leading it
+              carries. Nothing may use a size that is not on this list: an
+              arbitrary value is a role nobody named, and three of them had
+              appeared before this was written down. Because each size carries
+              its own leading, markup almost never sets <span className="code">leading-*</span>{" "}
+              — one typing box, which wants unusual air, is the only exception.
+            </p>
             {TYPE.map((t) => (
-              <div key={t.token} className="border-t border-rule py-4 first:border-t-0">
-                <div className="flex items-baseline gap-4">
+              <div key={t.token} className="border-t border-rule py-item first:border-t-0">
+                <div className="flex items-baseline gap-body">
                   <span className="font-mono text-sm text-ink-muted">{t.token}</span>
                   <span className="font-mono text-sm tabular text-ink-faint">{t.px}</span>
                   <span className="text-sm text-ink-faint">{t.use}</span>
                 </div>
-                <p className={`mt-2 ${t.className}`}>
+                <p className={`mt-snug ${t.className}`}>
                   Everything a single web page can work out about you
                 </p>
               </div>
             ))}
-            <div className="mt-6">
-              <Label className="mb-2">Data, in mono</Label>
+            <div className="mt-group">
+              <Label className="mb-tight">Data, in mono</Label>
               <Table cols={["30%", "auto"]}>
                 <tbody>
                   <tr className="align-top">
@@ -208,53 +268,81 @@ export default function DesignPage() {
           </section>
 
           {/* ── rules and spacing ──────────────────────────── */}
-          <section id="rules" className="mt-12">
-            <RuleHeading as="h2" className="mb-2">Rules and spacing</RuleHeading>
-            <p className="mb-5 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
-              Three weights, used strictly. A label bound to its content by a
-              hairline reads as a heading; the same label floating in equal
-              whitespace reads as a fragment, which is why the rule runs to the
-              edge.
+          <section id="rules" className="mt-section">
+            <RuleHeading as="h2" className="mb-tight">Rules and spacing</RuleHeading>
+            <p className="mb-body max-w-text text-sm text-ink-muted">
+              Three weights, and the axis says the role. A horizontal rule
+              divides the document; a vertical one marks a passage inside it.
+              A label bound to its content by a hairline reads as a heading,
+              where the same label floating in equal whitespace reads as a
+              fragment — which is why the rule runs to the edge.
             </p>
-            <div className="max-w-[72ch] space-y-6">
-              <div>
-                <div className="mb-1.5 h-px w-full bg-ink" />
-                <span className="text-sm text-ink-muted">
-                  <span className="font-mono">border-ink</span> — one per category, and the masthead
-                </span>
-              </div>
-              <div>
-                <div className="mb-1.5 h-px w-full bg-rule-strong" />
-                <span className="text-sm text-ink-muted">
-                  <span className="font-mono">border-rule-strong</span> — control outlines, table heads
-                </span>
-              </div>
-              <div>
-                <div className="mb-1.5 h-px w-full bg-rule" />
-                <span className="text-sm text-ink-muted">
-                  <span className="font-mono">border-rule</span> — rows, cards, everything else
-                </span>
-              </div>
-              <RuleHeading className="pt-2">A ruled heading, as used throughout</RuleHeading>
+            <div className="max-w-text">
+              {WEIGHTS.map((w) => (
+                // The swatch is the divider: a separate border above it put two
+                // hairlines ten pixels apart, which reads as one doubled rule
+                // rather than as a specimen and a separation.
+                <div key={w.token} className="pb-item pt-tight first:pt-0">
+                  <div className={`mb-snug h-px w-full ${w.swatch}`} />
+                  <span className="code text-ink">{w.token}</span>
+                  <dl className="mt-tight grid gap-x-group gap-y-hair sm:grid-cols-[5.5rem_minmax(0,1fr)]">
+                    <dt className="text-sm text-ink-faint">Across</dt>
+                    <dd className="text-sm text-ink-muted">{w.across}</dd>
+                    <dt className="text-sm text-ink-faint">Down</dt>
+                    <dd className="text-sm text-ink-muted">{w.down}</dd>
+                  </dl>
+                </div>
+              ))}
+            </div>
+            <div className="mt-body max-w-text">
+              <RuleHeading>A ruled heading, as used throughout</RuleHeading>
+            </div>
+
+            <p className="mt-group mb-body max-w-text text-sm text-ink-muted">
+              Vertical rhythm runs on eight steps, each named for the
+              relationship it expresses rather than for its size. Every gap
+              between blocks comes from this list; the raw numeric scale is
+              left for the interior padding of controls, where the spacing is
+              optical rather than structural. Each step is at least 1.4x the
+              one below it, which is where a gap starts reading as deliberate
+              instead of as a rounding error.
+            </p>
+            <div className="max-w-text">
+              {SPACE.map((sp) => (
+                <div key={sp.token} className="border-t border-rule py-item first:border-t-0 first:pt-0">
+                  <div className="flex items-baseline gap-body">
+                    <span className="flex-1 font-mono text-sm text-ink-muted">{sp.token}</span>
+                    <span className="font-mono text-sm tabular text-ink-faint">{sp.px}px</span>
+                  </div>
+                  <p className="mt-tight text-sm text-ink-muted">{sp.use}</p>
+                  {/* The step drawn at its own size, so the list is checkable
+                      by eye rather than only by arithmetic. */}
+                  <div
+                    aria-hidden
+                    className="mt-tight border-l border-ink bg-sunken"
+                    style={{ height: `${sp.px}px` }}
+                  />
+                </div>
+              ))}
             </div>
           </section>
 
           {/* ── primitives ─────────────────────────────────── */}
-          <section id="primitives" className="mt-12">
-            <RuleHeading as="h2" className="mb-2">
+          <section id="primitives" className="mt-section">
+            <RuleHeading as="h2" className="mb-tight">
               <Icon name="layers" className="size-4 text-ink-faint" />
               Primitives
             </RuleHeading>
-            <p className="mb-5 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
+            <p className="mb-body max-w-text text-sm text-ink-muted">
               Eleven components in one file, written by hand. No component
               library: for a document made of rules and text, a runtime would
               cost more than it returns.
             </p>
 
-            <div className="space-y-8">
+            <div className="space-y-group">
               <div>
-                <Label className="mb-2">Button — outline and quiet</Label>
-                <div className="flex flex-wrap items-center gap-2">
+                <Label className="mb-tight">Button — outline and quiet</Label>
+                <div className="flex flex-wrap items-center gap-tight">
                   <Button>
                     <Icon name="refresh" className="size-3.5" />
                     Re-collect
@@ -265,7 +353,7 @@ export default function DesignPage() {
               </div>
 
               <div>
-                <Label className="mb-2">Menu — for actions that belong together</Label>
+                <Label className="mb-tight">Menu — for actions that belong together</Label>
                 <Menu label="Export" align="left">
                   <MenuItem onSelect={() => {}} hint="clipboard">
                     Copy everything as JSON
@@ -277,27 +365,27 @@ export default function DesignPage() {
               </div>
 
               <div>
-                <Label className="mb-2">Badge — a caption, not a chip</Label>
-                <div className="flex flex-wrap items-center gap-3">
+                <Label className="mb-tight">Badge — a caption, not a chip</Label>
+                <div className="flex flex-wrap items-center gap-snug">
                   <Badge>no permission needed</Badge>
                   <Badge tone="outline">constructed here · never sent</Badge>
                 </div>
               </div>
 
               <div>
-                <Label className="mb-2">Tooltip — text lives in an attribute, drawn by a pseudo-element</Label>
+                <Label className="mb-tight">Tooltip — one shared panel, positioned against the viewport</Label>
                 <span className="text-sm text-ink-muted">
                   Hover the marker
-                  <Tooltip label="Definitions reach assistive technology through aria-label, and are drawn from data-tip, so several hundred of them cost one element each.">
+                  <Tooltip label="One fixed panel serves every trigger on the page, so nothing can clip it: it measures itself, flips above the trigger when there is no room below, and clamps to the window. The text reaches assistive technology through the trigger's own aria-label.">
                     <Icon name="info" className="ml-1 size-3 text-ink-faint hover:text-ink" />
                   </Tooltip>
                 </span>
               </div>
 
               <div>
-                <Label className="mb-2">Disclosure</Label>
+                <Label className="mb-tight">Disclosure</Label>
                 <Disclosure summary="Show the evidence">
-                  <p className="max-w-[70ch] border-t border-rule pt-2 text-sm text-ink-muted">
+                  <p className="max-w-text border-t border-rule pt-tight text-sm text-ink-muted">
                     Used wherever a claim should be checkable without the detail
                     crowding the claim.
                   </p>
@@ -305,30 +393,30 @@ export default function DesignPage() {
               </div>
 
               <div>
-                <Label className="mb-2">Card</Label>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <Label className="mb-tight">Card</Label>
+                <div className="grid gap-snug sm:grid-cols-2">
                   <Card className="p-4">
                     <h4 className="text-base font-medium">Default</h4>
-                    <p className="mt-1 text-sm text-ink-muted">On surface, hairline border.</p>
+                    <p className="mt-hair text-sm text-ink-muted">On surface, hairline border.</p>
                   </Card>
                   <Card tone="raised" className="p-4">
                     <h4 className="text-base font-medium">Raised</h4>
-                    <p className="mt-1 text-sm text-ink-muted">For panels that should recede.</p>
+                    <p className="mt-hair text-sm text-ink-muted">For panels that should recede.</p>
                   </Card>
                 </div>
               </div>
 
               <div>
-                <Label className="mb-2">Code</Label>
+                <Label className="mb-tight">Code</Label>
                 <CodeBlock>{`GET /api/etag\nIf-None-Match: "a00fa3a1-df18-4a0e"\n\n304 Not Modified`}</CodeBlock>
               </div>
             </div>
           </section>
 
           {/* ── tables ─────────────────────────────────────── */}
-          <section id="tables" className="mt-12">
-            <RuleHeading as="h2" className="mb-2">Tables</RuleHeading>
-            <p className="mb-5 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
+          <section id="tables" className="mt-section">
+            <RuleHeading as="h2" className="mb-tight">Tables</RuleHeading>
+            <p className="mb-body max-w-text text-sm text-ink-muted">
               The workhorse. Field names are secondary and values primary, so a
               row reads in one pass. Columns are fixed and every cell wraps —
               nothing scrolls sideways. A withheld value is greyed and named
@@ -362,24 +450,36 @@ export default function DesignPage() {
           </section>
 
           {/* ── motion ─────────────────────────────────────── */}
-          <section id="motion" className="mt-12">
-            <RuleHeading as="h2" className="mb-2">Motion</RuleHeading>
-            <p className="mb-5 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
-              Two animations exist. A sweep says work is running and its
-              duration is unknown; a rise says content has resolved. Both are
-              suppressed entirely under reduced-motion, where the same states
+          <section id="motion" className="mt-section">
+            <RuleHeading as="h2" className="mb-tight">Motion</RuleHeading>
+            <p className="mb-body max-w-text text-sm text-ink-muted">
+              Three animations exist. A sweep says work is running and its
+              duration is unknown; a rise says content has resolved; a breath
+              marks a table whose values are still changing as you read. All
+              three are suppressed under reduced-motion, where the same states
               are shown statically.
             </p>
-            <div className="max-w-[72ch] space-y-5">
+            <div className="max-w-text space-y-body">
               <div>
                 <span className="text-sm text-ink-muted">sweep — 1.4s, infinite</span>
-                <div className="mt-1.5 h-px overflow-hidden bg-rule">
+                <div className="mt-tight h-px overflow-hidden bg-rule">
                   <div className="h-px w-1/5 bg-ink animate-[sweep_1.4s_ease-in-out_infinite]" />
                 </div>
               </div>
               <div>
+                <span className="text-sm text-ink-muted">breathe — 2.8s, infinite</span>
+                <div className="mt-tight flex items-center gap-hair text-xs text-ink-faint">
+                  <span
+                    aria-hidden
+                    className="size-1 shrink-0 rounded-full bg-ink-faint
+                               motion-safe:animate-[breathe_2.8s_ease-in-out_infinite]"
+                  />
+                  live
+                </div>
+              </div>
+              <div>
                 <span className="text-sm text-ink-muted">rise — 260ms, once, staggered by 55ms</span>
-                <div className="mt-2 space-y-1.5">
+                <div className="mt-tight space-y-tight">
                   {[0, 1, 2].map((i) => (
                     <p
                       key={i}
@@ -395,22 +495,22 @@ export default function DesignPage() {
           </section>
 
           {/* ── icons ──────────────────────────────────────── */}
-          <section id="icons" className="mt-12">
-            <RuleHeading as="h2" className="mb-2">Icons</RuleHeading>
-            <p className="mb-5 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
+          <section id="icons" className="mt-section">
+            <RuleHeading as="h2" className="mb-tight">Icons</RuleHeading>
+            <p className="mb-body max-w-text text-sm text-ink-muted">
               Lucide at 1.75 stroke, muted, and only where they aid
               orientation: one per category heading, one per meta chip. Never
               repeated down an index. The wordmark carries the fingerprint.
             </p>
-            <div className="mb-6 flex items-center gap-3 border-y border-rule py-4">
+            <div className="mb-body flex items-center gap-snug border-y border-rule py-body">
               <Logo className="h-8 w-auto" />
-              <span className="text-[1.9rem] font-semibold leading-none tracking-[-0.025em]">
+              <span className="text-display font-semibold tracking-[-0.025em]">
                 Session Context
               </span>
             </div>
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-6">
+            <div className="grid grid-cols-3 gap-snug sm:grid-cols-5 lg:grid-cols-6">
               {ICONS.map((name) => (
-                <div key={name} className="flex items-center gap-2 text-sm text-ink-muted">
+                <div key={name} className="flex items-center gap-tight text-sm text-ink-muted">
                   <Icon name={name} className="size-4 text-ink" />
                   <span className="truncate font-mono text-xs">{name}</span>
                 </div>
@@ -419,9 +519,9 @@ export default function DesignPage() {
           </section>
 
           {/* ── voice ──────────────────────────────────────── */}
-          <section id="voice" className="mt-12">
-            <RuleHeading as="h2" className="mb-2">Voice</RuleHeading>
-            <div className="max-w-[72ch] text-sm leading-relaxed text-ink-muted">
+          <section id="voice" className="mt-section">
+            <RuleHeading as="h2" className="mb-tight">Voice</RuleHeading>
+            <div className="max-w-text text-sm text-ink-muted">
               {[
                 ["Second person, present tense.", "The headline states the fact about the reader; the body names the mechanism."],
                 ["No collective “we”.", "The site is not a person. Where an actor is needed, it is “this page”."],
@@ -429,17 +529,17 @@ export default function DesignPage() {
                 ["American spelling.", "The APIs are American; mixing registers reads as carelessness."],
                 ["Say what is not known.", "A withheld value, a retention limit, a proxy standing in for the browser — each is stated rather than glossed."],
               ].map(([rule, detail]) => (
-                <p key={rule} className="border-t border-rule py-3 first:border-t-0 first:pt-0">
+                <p key={rule} className="border-t border-rule py-item first:border-t-0 first:pt-0">
                   <span className="font-medium text-ink">{rule}</span> {detail}
                 </p>
               ))}
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="mt-body grid gap-snug sm:grid-cols-2">
                 <Card className="p-4">
-                  <Label className="mb-1">Instead of</Label>
+                  <Label className="mb-tight">Instead of</Label>
                   <p className="text-sm">“We can estimate how much free disk space you have.”</p>
                 </Card>
                 <Card className="p-4">
-                  <Label className="mb-1">Write</Label>
+                  <Label className="mb-tight">Write</Label>
                   <p className="text-sm text-ink">
                     “This page can estimate how much free disk space you have.”
                   </p>

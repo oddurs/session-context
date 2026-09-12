@@ -134,7 +134,7 @@ export default async function Page() {
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
-    <main className="mx-auto max-w-page px-4 pb-24 sm:px-6">
+    <main className="mx-auto max-w-page px-4 pb-major sm:px-6">
       <SiteHeader
         current="data"
         title="What this page learned about you"
@@ -147,11 +147,11 @@ export default async function Page() {
         * blocking JavaScript is not the defense people take it for.
         */}
       <noscript>
-        <section className="border-b border-rule py-8">
+        <section className="border-b border-rule py-group">
           <h2 className="text-xl font-semibold tracking-tight">
             You have JavaScript disabled. It changed less than you would hope.
           </h2>
-          <p className="mt-2 max-w-[72ch] text-base leading-relaxed text-ink-muted">
+          <p className="mt-tight max-w-text text-base text-ink-muted">
             The findings below normally come from scripts, and those are not
             running. Everything in this list arrived anyway — sent by your
             browser before any code could execute, or reported by the
@@ -159,7 +159,7 @@ export default async function Page() {
             on this page fires only when scripting is off, so the server has
             already recorded that you are reading it this way.
           </p>
-          <dl className="mt-6 grid max-w-[72ch] gap-x-8 gap-y-3 sm:grid-cols-2">
+          <dl className="mt-body grid max-w-text gap-x-group gap-y-snug sm:grid-cols-2">
             {server
               .flatMap((s) => s.rows.map((r) => ({ ...r, from: s.title })))
               .filter((r) => r.v !== undefined && String(r.v).length < 90)
@@ -171,7 +171,7 @@ export default async function Page() {
                 </div>
               ))}
           </dl>
-          <p className="mt-6 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
+          <p className="mt-body max-w-text text-sm text-ink-muted">
             The full explanation of how each technique works is on the{" "}
             <a href="/methods">methods page</a>, which is plain prose and needs
             no scripts either.
@@ -180,8 +180,8 @@ export default async function Page() {
       </noscript>
 
       <ClientProbe serverSections={server} probeKey={probeKey} nonce={nonce} />
-      <footer className="mt-16 border-t border-rule pt-4 text-sm leading-relaxed text-ink-muted">
-        <p className="max-w-[76ch]">
+      <footer className="mt-major border-t border-rule pt-body text-sm text-ink-muted">
+        <p className="max-w-text">
           Built with FingerprintJS, ua-parser-js and detectIncognito alongside
           direct platform probes. Sections marked “granted” run only after you
           approve a prompt. Values reading “not reported” mean the browser

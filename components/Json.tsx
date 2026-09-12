@@ -53,7 +53,7 @@ export function Json({ value, dense }: { value: unknown; dense?: boolean }) {
     <>
       <pre
         className={cx(
-          "overflow-x-auto whitespace-pre font-mono text-sm leading-relaxed",
+          "overflow-x-auto whitespace-pre font-mono text-sm",
           !dense && "rounded-md border border-rule bg-sunken p-3"
         )}
       >
@@ -70,7 +70,7 @@ export function Json({ value, dense }: { value: unknown; dense?: boolean }) {
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="mt-1 text-sm text-ink-muted underline decoration-rule-strong underline-offset-2 hover:text-ink"
+          className="mt-hair text-sm text-ink-muted underline decoration-rule-strong underline-offset-2 hover:text-ink"
         >
           {open ? "Collapse" : `Show all ${lines.length} lines`}
         </button>

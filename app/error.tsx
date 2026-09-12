@@ -19,21 +19,21 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="mx-auto max-w-page px-4 py-16 sm:px-6">
+    <main className="mx-auto max-w-page px-4 py-major sm:px-6">
       <h1 className="text-xl font-semibold tracking-tight">This page failed to render.</h1>
-      <p className="mt-3 max-w-[70ch] text-base leading-relaxed text-ink-muted">
+      <p className="mt-snug max-w-text text-base text-ink-muted">
         Something in the collection threw an error your browser did not expect.
         Nothing was sent anywhere, and nothing about the failure left this
         machine.
       </p>
-      <p className="mt-3 max-w-[70ch] font-mono text-sm text-ink-muted">
+      <p className="mt-snug max-w-text font-mono text-sm text-ink-muted">
         {error.message}
         {error.digest && ` (${error.digest})`}
       </p>
       <button
         type="button"
         onClick={reset}
-        className="mt-6 border border-rule-strong px-2.5 py-1 text-sm hover:bg-sunken"
+        className="mt-body border border-rule-strong px-2.5 py-1 text-sm hover:bg-sunken"
       >
         Try again
       </button>

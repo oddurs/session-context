@@ -140,11 +140,11 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
 
   return (
     <Card className="p-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-snug">
         <h4 className="text-base font-semibold tracking-tight">Type one sentence</h4>
         <Badge>no permission needed</Badge>
       </div>
-      <p className="mt-2 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
+      <p className="mt-tight max-w-text text-sm text-ink-muted">
         {hasProfile && !result
           ? "A rhythm from an earlier attempt is stored in this browser. Type the sentence again and it will be compared against it."
           : "Type the sentence below. This page measures the rhythm, not the words, then saves the pattern — type it a second time and it will say whether the same person is at the keyboard."}
@@ -154,7 +154,7 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
       <div
         onClick={() => input.current?.focus()}
         className={cx(
-          "mt-4 cursor-text rounded-md border p-4 text-lg leading-relaxed",
+          "mt-body cursor-text rounded-md border p-4 text-lg leading-relaxed",
           "transition-[border-color,box-shadow] duration-150 ease-out",
           focused ? "border-ink shadow-[0_0_0_3px_rgb(22_22_15/0.05)]" : "border-rule-strong hover:border-ink-muted"
         )}
@@ -224,13 +224,13 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
       </div>
 
       {/* live readout while typing */}
-      <div className="mt-3 flex flex-wrap items-center gap-x-8 gap-y-2 text-sm text-ink-muted">
+      <div className="mt-snug flex flex-wrap items-center gap-x-group gap-y-tight text-sm text-ink-muted">
         <span className="tabular">
           {typed.length} / {PHRASE.length} characters
         </span>
         <span className="tabular">{stats.accuracy}% accurate</span>
         <span className="tabular">{stats.wpm} wpm</span>
-        <span className="ml-auto flex items-center gap-2">
+        <span className="ml-auto flex items-center gap-tight">
           {result ? (
             <Button onClick={() => reset()}>Type it again</Button>
           ) : (
@@ -245,7 +245,7 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
       </div>
 
       {/* progress as a hairline */}
-      <div className="mt-3 h-px w-full bg-rule">
+      <div className="mt-snug h-px w-full bg-rule">
         <div
           className="h-px bg-ink transition-[width] duration-150"
           style={{ width: `${progress * 100}%` }}
@@ -253,11 +253,11 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
       </div>
 
       {result && (
-        <div className="mt-5 border-t border-rule pt-4">
-          <p className="max-w-[64ch] text-lg font-medium leading-snug tracking-tight">
+        <div className="mt-body border-t border-rule pt-body">
+          <p className="max-w-lede text-lg font-medium tracking-tight">
             {String(result.rows.find((r) => r.k === "verdict")?.v)}
           </p>
-          <Table cols={["46%", "auto"]} className="mt-3">
+          <Table cols={["46%", "auto"]} className="mt-snug">
             <tbody>
               {result.rows
                 .filter((r) =>
@@ -278,7 +278,7 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
           </Table>
           <a
             href="#typing"
-            className="mt-3 inline-block text-sm text-ink-muted no-underline hover:text-ink hover:underline"
+            className="mt-snug inline-block text-sm text-ink-muted no-underline hover:text-ink hover:underline"
           >
             Everything measured →
           </a>

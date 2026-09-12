@@ -1,7 +1,7 @@
 "use client";
 
 import { ESTIMATES, NAIVE_TOTAL_BITS, SAMPLE_BITS, SOURCES, bitsOf } from "@/lib/entropy";
-import { RuleHeading, cx } from "./ui";
+import { cx } from "./ui";
 
 const STANDING_LABEL = {
   holds: "still holds",
@@ -21,17 +21,16 @@ export function Identifiability() {
   const max = Math.max(...ESTIMATES.map(bitsOf));
 
   return (
-    <section id="identifiability" className="mt-14">
-      <RuleHeading as="h3" className="mb-4">
+    <section id="identifiability" className="mb-major">
+      <h2 className="text-xl font-semibold tracking-tight">
         How identifying is any of this?
-      </RuleHeading>
-
-      <p className="max-w-[72ch] text-base leading-relaxed">
+      </h2>
+      <p className="mt-tight mb-body max-w-text text-base">
         A bit of entropy halves the population. Nineteen bits distinguishes one
         person in half a million; thirty-three would distinguish one person on
         earth.
       </p>
-      <p className="mt-3 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
+      <p className="mt-snug max-w-text text-sm text-ink-muted">
         This page will not tell you that you are “one in 286,777”, because that
         number requires a database of other visitors to compare you against —
         and keeping one would make this page the thing it is arguing about.
@@ -41,12 +40,12 @@ export function Identifiability() {
         {SAMPLE_BITS.toFixed(1)} bits.
       </p>
 
-      <ul className="mt-6 max-w-[72ch]">
+      <ul className="mt-body max-w-text">
         {ESTIMATES.map((e) => {
           const bits = bitsOf(e);
           return (
-            <li key={e.signal} className="border-t border-rule py-3 first:border-t-0">
-              <div className="flex items-baseline gap-3">
+            <li key={e.signal} className="border-t border-rule py-item first:border-t-0">
+              <div className="flex items-baseline gap-snug">
                 <span className="flex-1 text-sm font-medium">{e.signal}</span>
                 <span className="text-xs text-ink-faint">{STANDING_LABEL[e.standing]}</span>
                 <span className="w-[4.75rem] shrink-0 whitespace-nowrap text-right font-mono text-sm tabular">
@@ -54,19 +53,19 @@ export function Identifiability() {
                 </span>
               </div>
               {/* the page's one piece of visual encoding, and it earns its place */}
-              <div className="mt-1.5 h-px w-full bg-rule">
+              <div className="mt-tight h-px w-full bg-rule">
                 <div
                   className={cx("h-px", e.standing === "decayed" ? "bg-ink-faint" : "bg-ink")}
                   style={{ width: `${(bits / max) * 100}%` }}
                 />
               </div>
-              <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">{e.note}</p>
+              <p className="mt-tight text-sm text-ink-muted">{e.note}</p>
             </li>
           );
         })}
       </ul>
 
-      <p className="mt-5 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
+      <p className="mt-body max-w-text text-sm text-ink-muted">
         Adding these gives {NAIVE_TOTAL_BITS.toFixed(0)} bits, which would
         identify one browser in {Math.round(2 ** NAIVE_TOTAL_BITS / 1e18)}{" "}
         quintillion — an absurd figure, and a useful warning. Entropy is only
@@ -77,11 +76,11 @@ export function Identifiability() {
         this one refuses to keep.
       </p>
 
-      <div className="mt-4 max-w-[72ch] border-t border-rule pt-3">
+      <div className="mt-body max-w-text border-t border-rule pt-snug">
         <span className="text-xs text-ink-faint">Sources</span>
-        <ul className="mt-1 space-y-1">
+        <ul className="mt-tight space-y-hair">
           {SOURCES.map((s) => (
-            <li key={s.label} className="text-sm leading-relaxed text-ink-muted">
+            <li key={s.label} className="text-sm text-ink-muted">
               <a href={s.href} target="_blank" rel="noreferrer" className="text-ink">
                 {s.label}
               </a>
