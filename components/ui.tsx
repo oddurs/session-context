@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 /* ═══════════════════════════════════════════════════════════════
    UI primitives. Minimal and typographic: hairline rules, no
@@ -102,6 +104,7 @@ export function Button({
   variant = "default",
   className,
   title,
+  label,
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -109,11 +112,14 @@ export function Button({
   variant?: keyof typeof BUTTON_VARIANTS;
   className?: string;
   title?: string;
+  /** Required when the button is an icon alone: it has no text to read. */
+  label?: string;
 }) {
   return (
     <button
       type="button"
       title={title}
+      aria-label={label}
       onClick={onClick}
       disabled={disabled}
       className={cx(
@@ -123,6 +129,110 @@ export function Button({
       )}
     >
       {children}
+    </button>
+  );
+}
+
+/* ── menu ────────────────────────────────────────────────────── */
+
+/**
+ * A small menu for actions that belong together. Written here rather than
+ * installed: it needs to close on outside clicks and on Escape, and nothing
+ * else.
+ */
+export function Menu({
+  label,
+  children,
+  align = "right",
+}: {
+  label: ReactNode;
+  children: ReactNode;
+  align?: "left" | "right";
+}) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!root.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div ref={root} className="relative" onClick={() => setOpen(false)}>
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        className={cx(
+          "inline-flex items-center gap-1.5 border border-transparent px-1.5 py-1 text-sm transition-colors",
+          open ? "text-ink" : "text-ink-muted hover:text-ink"
+        )}
+      >
+        {label}
+        <svg
+          viewBox="0 0 16 16"
+          className={cx("size-3 transition-transform", open && "rotate-180")}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M4 6.5 8 10.5l4-4" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className={cx(
+            "absolute top-[calc(100%+6px)] z-50 min-w-[13rem] border border-rule-strong bg-surface py-1",
+            "shadow-[0_6px_20px_-8px_rgb(0_0_0/0.28)] motion-safe:animate-[rise-in_140ms_ease-out]",
+            align === "right" ? "right-0" : "left-0"
+          )}
+        >
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function MenuItem({
+  children,
+  onSelect,
+  hint,
+}: {
+  children: ReactNode;
+  onSelect: () => void;
+  /** a quiet note on the right, such as a file type */
+  hint?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onSelect}
+      className="flex w-full items-baseline gap-4 px-3 py-1.5 text-left text-sm text-ink hover:bg-sunken"
+    >
+      <span className="flex-1">{children}</span>
+      {hint && <span className="font-mono text-xs text-ink-faint">{hint}</span>}
     </button>
   );
 }
@@ -217,8 +327,8 @@ export function Disclosure({
   return (
     <details className={cx("group/disc", className)}>
       <summary
-        className="flex cursor-pointer list-none items-center gap-1.5 text-sm text-ink-muted
-                   marker:content-none hover:text-ink"
+        className="inline-flex cursor-pointer list-none items-center gap-1 text-sm text-ink-muted
+                   marker:content-none hover:text-ink hover:underline"
       >
         <svg
           viewBox="0 0 16 16"

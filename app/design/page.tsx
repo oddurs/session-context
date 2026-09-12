@@ -9,6 +9,8 @@ import {
   CodeBlock,
   Disclosure,
   Label,
+  Menu,
+  MenuItem,
   RuleHeading,
   Table,
   Td,
@@ -260,6 +262,18 @@ export default function DesignPage() {
                   <Button disabled>Disabled</Button>
                   <Button variant="quiet">Quiet</Button>
                 </div>
+              </div>
+
+              <div>
+                <Label className="mb-2">Menu — for actions that belong together</Label>
+                <Menu label="Export" align="left">
+                  <MenuItem onSelect={() => {}} hint="clipboard">
+                    Copy everything as JSON
+                  </MenuItem>
+                  <MenuItem onSelect={() => {}} hint=".json">
+                    Download the whole record
+                  </MenuItem>
+                </Menu>
               </div>
 
               <div>

@@ -38,7 +38,7 @@ import { TrackerPayloads } from "./TrackerPayloads";
 import { TypingBiometrics } from "./TypingBiometrics";
 import { EraseButton } from "./EraseButton";
 import { Icon } from "./Icon";
-import { Button, Checkbox, RuleHeading, cx } from "./ui";
+import { Button, Checkbox, Menu, MenuItem, RuleHeading, cx } from "./ui";
 import { StickyBar } from "./StickyBar";
 
 /** Raw-data category → the matching group on the methods page. */
@@ -342,18 +342,26 @@ export function ClientProbe({
                   .join("  ·  ")
         }
       >
-        <Button variant="quiet" onClick={() => void collect()} disabled={busy !== null}>
-          <Icon name="refresh" className="size-3.5" />
-          {busy === "collect" ? "Collecting…" : "Re-collect"}
+        <Button
+          variant="quiet"
+          onClick={() => void collect()}
+          disabled={busy !== null}
+          title={busy === "collect" ? "Collecting…" : "Collect everything again"}
+          label="Collect everything again"
+        >
+          <Icon
+            name="refresh"
+            className={cx("size-3.5", busy === "collect" && "motion-safe:animate-spin")}
+          />
         </Button>
-        <Button variant="quiet" onClick={copyJSON} disabled={!sections.length}>
-          <Icon name="copy" className="size-3.5" />
-          Copy JSON
-        </Button>
-        <Button variant="quiet" onClick={downloadJSON} disabled={!sections.length}>
-          <Icon name="download" className="size-3.5" />
-          Download
-        </Button>
+        <Menu label="Export">
+          <MenuItem onSelect={copyJSON} hint="clipboard">
+            Copy everything as JSON
+          </MenuItem>
+          <MenuItem onSelect={downloadJSON} hint=".json">
+            Download the whole record
+          </MenuItem>
+        </Menu>
       </StickyBar>
 
       <div className="lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">

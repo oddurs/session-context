@@ -90,32 +90,49 @@ export function StickyBar({
           {section}
         </span>
 
+        {/*
+          * Two registers, kept apart: plain words take you somewhere, words
+          * with a glyph do something here. A hairline between them stops the
+          * five items reading as one undifferentiated list.
+          */}
         <nav
+          aria-label="Pages"
           className={cx(
-            "ml-auto flex shrink-0 items-center gap-4 overflow-hidden whitespace-nowrap",
+            "ml-auto flex shrink-0 items-center gap-5 overflow-hidden whitespace-nowrap",
             "transition-[max-width,opacity] duration-300 ease-out",
-            detached ? "max-w-[16rem] opacity-100" : "pointer-events-none max-w-0 opacity-0"
+            detached ? "max-w-[18rem] opacity-100" : "pointer-events-none max-w-0 opacity-0"
           )}
         >
-          {PAGES.map((p) => (
-            <Link
-              key={p.href}
-              href={p.href}
-              className={cx(
-                "hidden text-sm no-underline hover:text-ink hover:underline sm:inline",
-                (current === "data" && p.href === "/") ||
-                  (current === "methods" && p.href === "/methods")
-                  ? "text-ink"
-                  : "text-ink-muted"
-              )}
-            >
-              {p.label}
-            </Link>
-          ))}
+          {PAGES.map((p) => {
+            const here =
+              (current === "data" && p.href === "/") ||
+              (current === "methods" && p.href === "/methods");
+            return (
+              <Link
+                key={p.href}
+                href={p.href}
+                aria-current={here ? "page" : undefined}
+                className={cx(
+                  "hidden text-sm no-underline sm:inline",
+                  here
+                    ? "font-medium text-ink"
+                    : "text-ink-muted hover:text-ink hover:underline"
+                )}
+              >
+                {p.label}
+              </Link>
+            );
+          })}
         </nav>
 
         {children && (
-          <div className={cx("flex shrink-0 items-center gap-1", !detached && "ml-auto")}>
+          <div
+            className={cx(
+              "flex shrink-0 items-center gap-0.5",
+              !detached && "ml-auto",
+              detached && "ml-5 border-l border-rule pl-5"
+            )}
+          >
             {children}
           </div>
         )}

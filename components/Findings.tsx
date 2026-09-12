@@ -1,7 +1,7 @@
 "use client";
 
 import type { Finding } from "@/lib/findings";
-import { HOW_ICON, ICON_FOR_GROUP } from "@/lib/taxonomy";
+import { ICON_FOR_GROUP } from "@/lib/taxonomy";
 import { Icon } from "./Icon";
 import { Json, looksLikeJson } from "./Json";
 import { Disclosure, RuleHeading, Table, Td } from "./ui";
@@ -84,11 +84,12 @@ export function Findings({
                   <p className="mt-2 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
                     {f.detail}
                   </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2">
-                    <span className="inline-flex items-center gap-1.5 text-xs text-ink-faint">
-                      <Icon name={HOW_ICON[f.how] ?? "info"} className="size-3.5" />
-                      {f.how}
-                    </span>
+                  {/* One line, not two fragments: how it was obtained, then
+                      what it was obtained from. The braces glyph read as
+                      broken text at this size, so the words carry it. */}
+                  <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                    <span className="text-ink-faint">{f.how}</span>
+                    <span aria-hidden className="text-rule-strong">·</span>
                     <Evidence f={f} />
                   </div>
                 </article>
