@@ -328,7 +328,10 @@ export function GatedLedger({
 
       try {
         const { section, outcome, reason } = await cap.run();
-        onResult(section);
+        // Only a granted probe has anything to show. A refusal used to add a
+        // table of its own error message, under a heading that said the
+        // opposite of what had happened; the row here reports the outcome.
+        if (outcome === "granted") onResult(section);
         setPhase(cap.id, { at: "done", outcome, reason });
       } catch (e) {
         setPhase(cap.id, { at: "done", outcome: "error", reason: (e as Error).message });

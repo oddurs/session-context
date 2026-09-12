@@ -387,7 +387,7 @@ export const DECLINED: { name: string; why: string }[] = [
   },
   {
     name: "IP geolocation lookup",
-    why: "Turning an address into a city means sending it to a third-party database. Every value on this page is computed locally, and that rule was worth keeping.",
+    why: "Turning an address into a city means handing it to a third-party database. Your address is never sent anywhere, by this page or by the server behind it — the one rule here with no exception.",
   },
 ];
 

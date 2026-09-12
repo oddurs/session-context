@@ -183,9 +183,9 @@ export default async function Page() {
       <footer className="mt-major border-t border-rule pt-body text-sm text-ink-muted">
         <p className="max-w-text">
           Built with FingerprintJS, ua-parser-js and detectIncognito alongside
-          direct platform probes. Sections marked “granted” run only after you
-          approve a prompt. Values reading “not reported” mean the browser
-          withheld them or has no support.
+          direct platform probes. Tables under “Unlocked by permission” appear
+          only after you approve a prompt. Values reading “not reported” mean
+          the browser withheld them or has no support.
         </p>
       </footer>
     </main>

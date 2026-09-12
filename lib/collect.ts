@@ -1403,7 +1403,7 @@ export function sortSections(sections: Section[]): Section[] {
 export async function probeGeolocation(): Promise<GatedResult> {
   const wrap = (rows: Row[]): Section => ({
     id: "geolocation",
-    title: "Geolocation (granted)",
+    title: "Geolocation",
     note: "Device position as reported by the OS location service.",
     rows,
   });
@@ -1460,7 +1460,7 @@ export async function probeGeolocation(): Promise<GatedResult> {
 export async function probeLocalFonts(): Promise<GatedResult> {
   const wrap = (rows: Row[]): Section => ({
     id: "local-fonts",
-    title: "Local Fonts (granted)",
+    title: "Local Fonts",
     note: "The complete installed font set, straight from the OS — far more precise than width-measurement detection.",
     rows,
   });
@@ -1493,7 +1493,7 @@ export async function probeLocalFonts(): Promise<GatedResult> {
 export async function probeDeviceLabels(): Promise<GatedResult> {
   const wrap = (rows: Row[]): Section => ({
     id: "device-labels",
-    title: "Media Device Details (granted)",
+    title: "Media Device Details",
     note: "With camera/mic permission the browser reveals hardware names, stable device IDs and full track capabilities.",
     rows,
   });

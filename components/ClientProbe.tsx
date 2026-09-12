@@ -298,7 +298,7 @@ export function ClientProbe({
 
   const dateline = [
     { label: "Findings", value: findings.length },
-    { label: "Details observed", value: reported.toLocaleString() },
+    { label: "Fields reported", value: reported.toLocaleString() },
     { label: "Fields checked", value: fieldCount.toLocaleString() },
     { label: "Tables", value: all.length },
     {
@@ -480,7 +480,7 @@ export function ClientProbe({
               <CollectionLog phases={phases} />
             ) : (
               <div className="motion-safe:animate-[fade-in_180ms_ease-out]">
-                <CollectionReceipt phases={phases} elapsed={elapsed} />
+                <CollectionReceipt phases={phases} />
                 <Findings findings={passiveFindings} groups={passiveGroups} stagger />
               </div>
             )}

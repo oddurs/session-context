@@ -605,7 +605,7 @@ export async function mediaCapabilitiesSection(): Promise<Section> {
 export async function probeScreenDetails(): Promise<GatedResult> {
   const wrap = (rows: Row[]): Section => ({
     id: "screen-details",
-    title: "Multi-Screen Details (granted)",
+    title: "Multi-Screen Details",
     note: "The Window Management permission reveals every attached display: resolution, position in the virtual desktop, color depth and manufacturer label.",
     rows,
   });
@@ -640,7 +640,7 @@ export async function probeScreenDetails(): Promise<GatedResult> {
 export async function probeClipboard(): Promise<GatedResult> {
   const wrap = (rows: Row[]): Section => ({
     id: "clipboard",
-    title: "Clipboard Contents (granted)",
+    title: "Clipboard Contents",
     note: "With clipboard-read permission a page can silently read whatever you last copied — frequently a password, address or message.",
     rows,
   });
@@ -676,7 +676,7 @@ export async function probeClipboard(): Promise<GatedResult> {
 export async function probeIdle(): Promise<GatedResult> {
   const wrap = (rows: Row[]): Section => ({
     id: "idle",
-    title: "Idle & Lock State (granted)",
+    title: "Idle & Lock State",
     note: "Idle Detection reports whether you are at the keyboard and whether the screen is locked — continuously, in the background.",
     rows,
   });
@@ -728,7 +728,7 @@ function firstEvent(type: string, ms: number): Promise<any | undefined> {
 export async function probeSensors(): Promise<GatedResult> {
   const wrap = (rows: Row[]): Section => ({
     id: "sensors",
-    title: "Motion & Orientation Sensors (granted)",
+    title: "Motion & Orientation Sensors",
     note: "Accelerometer and gyroscope readings. Sensor calibration noise is unique per physical device and survives every browser reset.",
     rows,
   });
@@ -986,7 +986,7 @@ export async function probeSchemes(): Promise<GatedResult> {
   return {
     section: {
       id: "schemes",
-      title: "Installed Desktop Applications (granted)",
+      title: "Installed Desktop Applications",
       note: "Detected by asking the browser to open each application's own URL scheme and watching whether this window lost focus. Browsers have tightened this repeatedly because it reveals software you never told the web about.",
       rows,
     },

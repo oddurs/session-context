@@ -52,6 +52,18 @@ const TYPE = [
 ];
 
 /**
+ * Line length, which is the third scale and was the last one written down.
+ * Ten different measures were in use and three of them — 70ch, 72ch, 74ch —
+ * are the same length to any reader.
+ */
+const MEASURE = [
+  { token: "--container-title", ch: 46, use: "The page title, which should break early" },
+  { token: "--container-lede", ch: 58, use: "A headline, or a statement that carries a section" },
+  { token: "--container-text", ch: 72, use: "All body prose" },
+  { token: "--container-wide", ch: 80, use: "Table notes, and prose set beside data" },
+];
+
+/**
  * Three rule weights, and what each one is allowed to divide.
  *
  * Two of these had drifted before this was written down: the masthead drew
@@ -123,8 +135,8 @@ export default function DesignPage() {
           { label: "Ink values", value: 4 },
           { label: "Type sizes", value: 8 },
           { label: "Spacing steps", value: 8 },
-          { label: "Primitives", value: 11 },
-        ].map((d, i) => (
+          { label: "Measures", value: 4 },
+                  ].map((d, i) => (
           <div key={d.label} className={i > 0 ? "min-w-0 border-l border-rule pl-body" : "min-w-0"}>
             <dt className="text-xs text-ink-faint">{d.label}</dt>
             <dd className="mt-hair text-lg font-medium leading-none tracking-[-0.01em] tabular">
@@ -250,6 +262,30 @@ export default function DesignPage() {
                 </p>
               </div>
             ))}
+            <div className="mt-group">
+              <Label className="mb-tight">Measure</Label>
+              <p className="mb-body max-w-wide text-sm text-ink-muted">
+                Four line lengths, because a heading and a paragraph should not
+                break at the same place. Every block of prose on the site uses
+                one of these.
+              </p>
+              {MEASURE.map((m) => (
+                <div key={m.token} className="border-t border-rule py-item first:border-t-0 first:pt-0">
+                  <div className="flex items-baseline gap-block">
+                    <span className="flex-1 font-mono text-sm text-ink-muted">{m.token}</span>
+                    <span className="font-mono text-sm tabular text-ink-faint">{m.ch}ch</span>
+                  </div>
+                  <p className="mt-tight text-sm text-ink-muted">{m.use}</p>
+                  {/* Drawn at its own width, so the list is checkable by eye. */}
+                  <div
+                    aria-hidden
+                    className="mt-tight h-px bg-rule"
+                    style={{ width: `${m.ch}ch` }}
+                  />
+                </div>
+              ))}
+            </div>
+
             <div className="mt-group">
               <Label className="mb-tight">Data, in mono</Label>
               <Table cols={["30%", "auto"]}>

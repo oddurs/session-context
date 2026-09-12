@@ -108,19 +108,10 @@ export function CollectionLog({ phases }: { phases: Phase[] }) {
 }
 
 /** After the reveal, the same log folds away into a single receipt. */
-export function CollectionReceipt({
-  phases,
-  elapsed,
-}: {
-  phases: Phase[];
-  elapsed: number;
-}) {
+export function CollectionReceipt({ phases }: { phases: Phase[] }) {
   if (!phases.length) return null;
   return (
-    <Disclosure
-      className="mb-group"
-      summary={`Collected in ${Math.round(elapsed)} ms — show what ran`}
-    >
+    <Disclosure className="mb-group" summary="Show what ran">
       <ul className="max-w-text border-t border-rule pt-hair">
         {phases.map((p) => (
           <Line key={p.id} label={p.label} at={p.at} fields={p.fields} state="done" />

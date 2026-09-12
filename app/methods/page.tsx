@@ -155,8 +155,8 @@ export default function MethodsPage() {
           <RuleHeading className="mt-section mb-body">Built with</RuleHeading>
           <p className="max-w-text text-sm text-ink-muted">
             FingerprintJS, ua-parser-js and detectIncognito alongside direct platform
-            probes. Every value on the data page is computed and displayed locally;
-            nothing is transmitted, and no part of this site contacts another company.
+            probes. No part of this site contacts another company, and the only
+            things the server remembers are the two named above.
           </p>
         </div>
       </div>
