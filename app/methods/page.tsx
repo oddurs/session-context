@@ -22,8 +22,16 @@ function Text({ children }: { children: string }) {
 }
 
 export const metadata = {
-  title: "Methods · Session Context",
-  description: "Every technique this page uses, how it works, and what browsers have done about it.",
+  title: "Methods",
+  description:
+    "The 36 techniques this site uses to identify a visitor, how each one works, what it exposes, and where browser defenses currently stand.",
+  alternates: { canonical: "/methods" },
+  openGraph: {
+    title: "Methods — how each technique works",
+    description:
+      "Passive collection, fingerprinting, respawning identifiers, cross-site tracking and permission-gated APIs: what each exposes and how browsers have responded.",
+    url: "/methods",
+  },
 };
 
 export default function MethodsPage() {

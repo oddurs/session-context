@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useClientValue } from "@/lib/use-client-value";
 import type { Section } from "@/lib/types";
+import { THIRD_PARTY_ORIGIN } from "@/lib/site";
 import { Card } from "./ui";
 
 /**
@@ -13,6 +14,9 @@ import { Card } from "./ui";
  */
 function otherOrigin(): string | null {
   if (typeof location === "undefined") return null;
+  // An explicitly configured second domain wins; it is the only thing that
+  // works in production, since a subdomain would still be the same site.
+  if (THIRD_PARTY_ORIGIN && THIRD_PARTY_ORIGIN !== location.origin) return THIRD_PARTY_ORIGIN;
   const { protocol, hostname, port } = location;
   const swap =
     hostname === "127.0.0.1" ? "localhost" : hostname === "localhost" ? "127.0.0.1" : null;
@@ -31,9 +35,10 @@ export function ThirdParty({ onResult }: { onResult: (s: Section) => void }) {
       onResult({
         id: "third-party",
         title: "Third-Party Embedding",
-        note: "This demonstration needs the site to be reachable on two hostnames so one can be embedded in the other as a genuine cross-origin frame.",
+        note: "This demonstration needs a second registrable domain to embed, because browsers partition storage by site: an embed on a subdomain of this one would count as first-party and prove nothing. Locally the two loopback hostnames serve that purpose.",
         rows: [
-          { k: "status", v: `not available on host "${location.hostname}"`, n: "open the site on 127.0.0.1 or localhost" },
+          { k: "status", v: `no second origin configured for "${location.hostname}"` },
+          { k: "how to enable it", v: "set NEXT_PUBLIC_THIRD_PARTY_ORIGIN to a domain you control", n: "must differ from this one" },
         ],
       });
       return;

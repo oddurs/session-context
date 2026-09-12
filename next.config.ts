@@ -72,7 +72,17 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: PERMISSIONS_POLICY },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Content-Type-Options", value: "nosniff" },
+          // The data page must never be cached: it is different per visitor.
           { key: "Cache-Control", value: "no-store" },
+        ],
+      },
+      {
+        // The methods page is static prose, so let crawlers and CDNs keep it.
+        source: "/methods",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
         ],
       },
     ];
