@@ -118,7 +118,7 @@ async function serverSections(): Promise<Section[]> {
     {
       id: "server-derived",
       title: "Server-Derived Context",
-      note: "What the server infers from the request. No external lookup is performed — no IP-geolocation service, no analytics endpoint. Nothing about this session leaves the machine.",
+      note: "What the server infers from the request alone. No external lookup is performed: no IP-geolocation service, no analytics endpoint, no third party of any kind. None of these values is recorded — the two that are, the ETag and the CSS probe, say so in their own tables.",
       rows: derived,
     },
   ];
@@ -139,7 +139,7 @@ export default async function Page() {
         current="data"
         title="What this page learned about you"
         lede="Everything a single web page can work out about the browser, device and person that requested it. The plain-English findings come first — each expands to the exact values behind it — and the complete field-by-field record follows."
-        note="Every value is computed and displayed locally. Nothing is transmitted, and no part of this page contacts another company."
+        note="Almost every value here is measured in your browser and never leaves it. No part of this page contacts another company, and nothing about you is written to disk. Two demonstrations do need this server to remember you for a while, and both say so where they appear."
       />
       {/*
         * With scripts off, the page still knows everything the server was told

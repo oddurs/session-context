@@ -407,7 +407,17 @@ async function storageSection(): Promise<Section> {
     rows.push(
       { k: "storage.quota", v: bytes(est.quota) },
       { k: "storage.usage", v: bytes(est.usage) },
-      { k: "usage / quota", v: est.quota ? `${((est.usage / est.quota) * 100).toFixed(4)}%` : undefined }
+      {
+        k: "usage / quota",
+        // Four decimal places on a share this small was noise; what matters is
+        // that the origin has been given room it has barely touched.
+        v: est.quota
+          ? (() => {
+              const pct = (est.usage / est.quota) * 100;
+              return pct === 0 ? "0%" : pct < 0.01 ? "under 0.01%" : `${pct.toFixed(2)}%`;
+            })()
+          : undefined,
+      }
     );
     for (const [k, v] of Object.entries(est.usageDetails ?? {}))
       rows.push({ k: `usageDetails.${k}`, v: bytes(v) });
@@ -914,8 +924,22 @@ function performanceSection(): Section {
   };
 }
 
-const ms = (v: unknown) =>
-  typeof v === "number" && Number.isFinite(v) ? `${v.toFixed(1)} ms` : undefined;
+/**
+ * A duration, at the precision the number deserves.
+ *
+ * Everything used to carry one decimal place, so a redirect that never
+ * happened read "0.0 ms" — a measured zero dressed up as a measurement to a
+ * tenth of a millisecond. The zeros themselves are worth keeping: no redirect,
+ * a cached DNS answer and a reused connection are all facts about this visit,
+ * and a page that hides its zeros is editing its own evidence.
+ */
+const ms = (v: unknown) => {
+  if (typeof v !== "number" || !Number.isFinite(v)) return undefined;
+  if (v === 0) return "0 ms";
+  if (v < 10) return `${Number(v.toFixed(2))} ms`;
+  if (v < 1000) return `${Math.round(v)} ms`;
+  return `${Math.round(v).toLocaleString()} ms`;
+};
 
 function clockPrecision(): string {
   let min = Infinity;

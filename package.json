@@ -1,7 +1,14 @@
 {
-  "name": "deep-metadata",
+  "name": "session-context",
   "version": "0.1.0",
   "private": true,
+  "description": "Everything one web page can learn about the browser, device and person that requested it \u2014 stated in plain English, with the raw values behind every claim.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oddurs/session-context.git"
+  },
+  "homepage": "https://sessioncontext.org",
   "scripts": {
     "dev": "node server.mjs",
     "build": "next build && node scripts/precompress.mjs",

@@ -19,6 +19,20 @@ export const metadata = {
   },
 };
 
+/** The only two things this server remembers, and for how long. */
+const KEPT = [
+  {
+    what: "The ETag identifier, and how often you return it",
+    life: "in memory, up to 24 hours",
+    why: "The server tags one response and your browser hands the tag back on every revalidation. Counting those is the demonstration: it is how a site recognizes a returning visitor with no cookie and no script. The record is three values — first seen, last seen, a count — against a random identifier that means nothing anywhere else.",
+  },
+  {
+    what: "Which CSS conditions your browser matched",
+    life: "in memory, up to 24 hours",
+    why: "The CSS-only fingerprint works by loading a different image for each condition that is true. The server has to remember which images were requested in order to show you the result afterwards — otherwise the technique could be described but not demonstrated. Tied to this visit, and to nothing else.",
+  },
+];
+
 export default function MethodsPage() {
   const total = METHOD_GROUPS.reduce((n, g) => n + g.methods.length, 0);
   const gated = METHOD_GROUPS.find((g) => g.id === "gated")?.methods.length ?? 0;
@@ -98,6 +112,44 @@ export default function MethodsPage() {
                 <p className="mt-tight max-w-text text-sm text-ink-muted">{d.why}</p>
               </article>
             ))}
+          </section>
+
+          {/*
+            * A site arguing that recognition should be visible has to be
+            * legible about its own. Two demonstrations here cannot work
+            * without the server remembering something, and a sweeping "nothing
+            * is transmitted" would have been both untrue and checkable in the
+            * source — which is linked from every page.
+            */}
+          <section id="kept" className="mt-section">
+            <RuleHeading as="h2" className="mb-tight">
+              <Icon name="database" className="size-4 text-ink-faint" />
+              What this site keeps
+            </RuleHeading>
+            <div className="mb-body">
+              <p className="max-w-text text-sm text-ink-muted">
+                Most of the data page is measured in your browser and never sent
+                anywhere. Two demonstrations are the exception, because neither can
+                be shown without a server that remembers — and being vague about
+                that would make this page the thing it is arguing against.
+              </p>
+            </div>
+            {KEPT.map((k) => (
+              <article key={k.what} className="border-t border-rule py-item first:border-t-0 first:pt-0">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-group gap-y-hair">
+                  <h3 className="text-lg font-medium tracking-tight">{k.what}</h3>
+                  <span className="text-sm text-ink-faint">{k.life}</span>
+                </div>
+                <p className="mt-tight max-w-text text-sm text-ink-muted">{k.why}</p>
+              </article>
+            ))}
+            <p className="mt-body max-w-text text-sm text-ink-muted">
+              Both live in a bounded map in the server&rsquo;s memory, capped at five
+              thousand entries and pruned after a day. Nothing is written to disk,
+              there is no database, and a restart forgets everyone. No analytics,
+              no third party, and no IP-geolocation lookup — an address is never
+              sent anywhere to be turned into a place.
+            </p>
           </section>
 
           <RuleHeading className="mt-section mb-body">Built with</RuleHeading>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { cx } from "./ui";
+import { MoreToggle, cx } from "./ui";
 
 /**
  * Pretty-printed JSON with monochrome emphasis: keys carry the weight, string
@@ -67,13 +67,14 @@ export function Json({ value, dense }: { value: unknown; dense?: boolean }) {
         </code>
       </pre>
       {lines.length > COLLAPSED_LINES && (
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          className="mt-hair text-sm text-ink-muted underline decoration-rule-strong underline-offset-2 hover:text-ink"
-        >
-          {open ? "Collapse" : `Show all ${lines.length} lines`}
-        </button>
+        <span className="mt-hair inline-block">
+          <MoreToggle
+            open={open}
+            onToggle={() => setOpen(!open)}
+            more={`show all ${lines.length.toLocaleString()} lines`}
+            less="show less"
+          />
+        </span>
       )}
     </>
   );

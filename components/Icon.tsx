@@ -1,5 +1,6 @@
 import {
-  AppWindow, BookOpen, Braces, Clock, Copy, Cpu, Database, Download, Eye,
+  AppWindow,
+  ChevronRight, BookOpen, Braces, Clock, Copy, Cpu, Database, Download, Eye,
   Fingerprint, Frame, Globe, Info, Keyboard, KeyRound, Layers,
   Megaphone, Monitor, MousePointer2, Paintbrush, RadioTower, RefreshCw, Send,
   ArrowUp, Check, Server, Shield, SlidersHorizontal, Thermometer, type LucideIcon,
@@ -56,6 +57,7 @@ const ICONS = {
   pointer: MousePointer2,
   check: Check,
   up: ArrowUp,
+  chevron: ChevronRight,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

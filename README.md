@@ -1,74 +1,102 @@
 # Session Context
 
-A single web page that collects everything it can observe about the browser,
-device and person that requested it — then explains each finding in plain
-English and shows the exact values behind it.
+**[sessioncontext.org](https://sessioncontext.org)**
 
-Built as a privacy demonstration: every technique here is one that ordinary
-websites use, and almost all of them run without a permission prompt.
+One web page collects everything it can observe about the browser, device and
+person that requested it, states each finding in plain English, and shows the
+raw values behind it. A second page documents every technique used, how it
+works, and where browser defenses currently stand.
+
+The argument it makes is not that any single measurement is alarming. It is
+that a page which asks for nothing already knows a great deal — and that the
+gap between "no permission" and "one permission" is much smaller than the
+prompt implies.
 
 ## What it does
 
-Two views, plus a methods reference:
+- **Findings in plain English.** Around thirty statements about you, ordered by
+  how much they give away, each expanding to the exact values it came from.
+- **The permission boundary.** Everything above one line on the page needed no
+  permission at all. Below it, eight capabilities that do ask — each saying what
+  it would reveal *and what the page already worked out without it*. Granting
+  one shows the guess against the certainty: 41 fonts inferred by measuring text
+  width, against the 383 the operating system actually reports.
+- **Persistence, demonstrated.** One identifier written into seven independent
+  browser stores plus an eighth the server hides in the HTTP cache as an ETag.
+  Clearing one does not clear the rest. The page will erase all eight on request
+  and show you, by re-reading each, that exactly one does not go.
+- **Fingerprinting without JavaScript.** A stylesheet that loads a different
+  image for each condition that is true, so the server learns your color scheme,
+  pixel density, input device, accessibility settings and rendering engine with
+  scripts blocked or disabled entirely.
+- **The complete record.** Forty-odd tables, seven hundred fields, every one
+  with its provenance.
 
-- **Findings** — ~28 plain-English statements ("You are using a Mac with an
-  Apple M5 Pro chip", "There is an identifier hidden in your browser cache"),
-  each expandable to the fields it was derived from.
-- **Everything** — ~40 tables, ~800 fields, grouped into six categories with a
-  glossary tooltip on every jargon term and anything unreported grayed out.
-- **Methods** — what each of the 36 techniques exposes, how it works, and where
-  browser defenses currently stand.
+## Ethics
 
-## Techniques
+These are load-bearing, and the site is specific about them rather than
+sweeping — a demonstration of surveillance should not itself be surveillance,
+and a vague privacy claim is checkable in this repository in about a minute.
 
-Passive (no JavaScript required): request headers, client hints via `Accept-CH`,
-raw header ordering, socket-level facts, and **CSS-only fingerprinting** — one
-style rule per condition, each loading a distinct image, including a rule that
-fires when scripting is disabled.
-
-Fingerprinting: canvas, WebGL/WebGPU, audio DSP, font metrics, engine tells,
-FingerprintJS composite scoring, Web Worker cross-checking, keystroke and
-pointer biometrics, sustained-performance profiling.
-
-Persistence: one identifier written to seven stores at once (cookies,
-localStorage, sessionStorage, IndexedDB, Cache Storage, a service worker,
-`window.name`) and respawned from whichever survives — plus an **ETag
-supercookie** that lives in the HTTP cache, not in site data.
-
-Cross-site: a genuine third-party frame (the same server on its other hostname,
-so no outside company is involved) demonstrating storage partitioning, and the
-real GA4, Meta Pixel and OpenRTB payloads constructed from your data and
-displayed without being sent.
-
-Permission-gated: precise location, clipboard contents, the full local font
-list, all attached displays, idle and lock state, camera/microphone identity,
-motion sensors, and installed-application detection behind an explicit warning.
-
-## What it deliberately does not do
-
-No data leaves the machine. No IP-geolocation lookup, no analytics endpoint, no
-live commercial trackers. Hidden autofill harvesting, history-sniffing side
-channels and silent cross-site login detection were left out on purpose; the
-Methods page states why for each.
+- No analytics, no third-party tags, no IP-geolocation lookup. An address is
+  never sent anywhere to be turned into a place.
+- Tracker payloads for the major ad platforms are constructed and displayed in
+  full, and never sent.
+- The "third-party" frame is this same server on a second hostname.
+- **What the server does keep**, because two demonstrations cannot work
+  otherwise: the ETag identifier with a count of how often your browser returns
+  it, and which CSS conditions your browser matched. Both are single entries in
+  a bounded in-memory map, capped at 5,000 entries, pruned after 24 hours, never
+  written to disk. A restart forgets everyone. Both are disclosed on the page
+  where they appear and at `/methods#kept`.
+- Four techniques are deliberately **not** implemented and documented as such at
+  `/methods#declined`: hidden autofill harvesting, history-sniffing side
+  channels, live commercial trackers, and silent cross-site login detection.
+- One probe is intrusive — scheme flooding, which can launch desktop
+  applications — and runs only behind an explicit in-page confirmation that
+  names every scheme it will try.
 
 ## Running it
 
 ```bash
 npm install
-npm run build
-npm start          # production, Turbopack, random port
-npm run dev        # development
+npm run dev      # localhost:3939, hot reload
+npm start        # production build, same port
+npm run probe    # drives headless Chrome and fails on any console error
 ```
 
-The custom server (`server.mjs`) exists so the page can report connection-level
-facts that a framework cannot see — raw header order, HTTP version, socket
-details — which it injects as `x-dm-*` request headers.
+`server.mjs` is a custom Node server rather than `next start`, for one reason:
+the page reports connection-level facts the framework cannot see — raw header
+order, HTTP version, socket details — which it injects as `x-dm-*` request
+headers. It binds both loopback addresses so `localhost` and `127.0.0.1` are
+each reachable, which is how the third-party framing demonstration gets a
+second origin locally.
 
-Open it on `127.0.0.1` or `localhost`: the third-party embedding demonstration
-needs both hostnames to exist, and uses the other one as its cross-origin frame.
+## Deploying
 
-## Stack
+Runs anywhere that runs a Node process. It cannot run on a platform that
+executes Next.js in its own serverless runtime: the custom server would not
+run, and the connection-level facts — the reason it exists — would be gone.
 
-Next.js 16 (App Router, Turbopack), React 19, Tailwind v4 with a hand-written
-token layer and local UI primitives — no component runtime. FingerprintJS,
-ua-parser-js and detectIncognito alongside direct platform probes.
+**Run exactly one instance.** The ETag counter and the CSS records live in a
+process-local map by design. A second replica means a second map, and the
+recognition demonstration starts reporting first visits to returning visitors.
+If it needs more capacity, scale the instance up, never out.
+
+## Layout
+
+| Path | Role |
+| --- | --- |
+| `lib/collect.ts` | Collection, and the passive browser probes |
+| `lib/advanced.ts` | Worker cross-check, tamper detection, storage respawn and ETag, benchmarks, the gated probes |
+| `lib/gated.ts` | The permission ledger: what each capability reveals, and what the page already knew without it |
+| `lib/findings.ts` | Turns collected sections into plain-English findings, each carrying its evidence |
+| `lib/methods.ts` | The prose catalogue behind `/methods` |
+| `app/globals.css` | The design system: ink, type scale, spacing scale, motion |
+
+`/design` documents the design system and is deliberately unlinked; it exists to
+be checked against.
+
+## License
+
+MIT.

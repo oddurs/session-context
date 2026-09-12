@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { Icon } from "./Icon";
 
 /* ═══════════════════════════════════════════════════════════════
    UI primitives. Minimal and typographic: hairline rules, no
@@ -339,12 +340,26 @@ export function Tooltip({
 
 /* ── disclosure ──────────────────────────────────────────────── */
 
+/**
+ * Everything on this site that opens.
+ *
+ * There were two of these: this one, and a hand-rolled button in the findings
+ * that kept its own state, drew its own copy of the same chevron, and swapped
+ * its own label. They behaved almost alike, which is the problem — almost.
+ *
+ * Built on `<details>` so the browser supplies the semantics and the keyboard
+ * behaviour rather than `aria-expanded` and a state hook. The marker rotates,
+ * the panel rises once, and neither happens under reduced motion.
+ */
 export function Disclosure({
   summary,
+  openSummary,
   children,
   className,
 }: {
   summary: ReactNode;
+  /** Shown in place of `summary` while open, where the label should change. */
+  openSummary?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
@@ -354,22 +369,52 @@ export function Disclosure({
         className="inline-flex cursor-pointer list-none items-center gap-hair text-sm text-ink-muted
                    marker:content-none hover:text-ink hover:underline"
       >
-        <svg
-          viewBox="0 0 16 16"
-          className="size-3 shrink-0 text-ink-faint transition-transform duration-200 ease-out group-open/disc:rotate-90"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M6 4l4 4-4 4" />
-        </svg>
-        {summary}
+        <Icon
+          name="chevron"
+          className="size-3 shrink-0 text-ink-faint transition-transform duration-200 ease-out
+                     group-open/disc:rotate-90"
+        />
+        {openSummary ? (
+          <>
+            <span className="group-open/disc:hidden">{summary}</span>
+            <span className="hidden group-open/disc:inline">{openSummary}</span>
+          </>
+        ) : (
+          summary
+        )}
       </summary>
-      <div className="mt-snug">{children}</div>
+      <div className="mt-snug motion-safe:animate-[rise-in_160ms_ease-out]">{children}</div>
     </details>
+  );
+}
+
+/**
+ * The control that lengthens a value in place — a long string, a deep JSON
+ * block. Not a Disclosure: nothing opens, the same value simply stops being
+ * cut short, so it stays a button and stays on the line it belongs to.
+ */
+export function MoreToggle({
+  open,
+  onToggle,
+  more,
+  less = "Show less",
+}: {
+  open: boolean;
+  onToggle: () => void;
+  /** the label that offers to expand, e.g. "show all 1,284" */
+  more: string;
+  less?: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-expanded={open}
+      onClick={onToggle}
+      className="whitespace-nowrap text-sm text-ink-muted underline decoration-rule-strong
+                 underline-offset-2 transition-colors hover:text-ink"
+    >
+      {open ? less : more}
+    </button>
   );
 }
 

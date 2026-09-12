@@ -12,6 +12,7 @@ import { StickyBar } from "./StickyBar";
 const NAV_ITEMS = [
   ...METHOD_GROUPS.map((g) => ({ id: g.id, title: g.title, icon: g.icon, count: g.methods.length })),
   { id: "declined", title: "Deliberately not built", icon: "shield" as const, count: 5 },
+  { id: "kept", title: "What this site keeps", icon: "database" as const, count: 2 },
 ];
 
 /** Sticky bar naming where you are, mirroring the data page. */

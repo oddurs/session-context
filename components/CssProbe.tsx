@@ -41,7 +41,7 @@ export function CssProbe({
         id: "css-noscript",
         title: "Fingerprinting Without JavaScript",
         note:
-          "Every line above was learned from CSS alone. Each rule loads a different image when it matches, so the server can tell which conditions were true from the requests it receives — with scripts blocked, disabled, or never loaded. Turning JavaScript off and reloading adds a row saying exactly that.",
+          "Every line above was learned from CSS alone. Each rule loads a different image when it matches, so the server can tell which conditions were true from the requests it receives — with scripts blocked, disabled, or never loaded at all. Reading it back requires the server to have kept which images your browser asked for: that record, like the ETag's, is one entry in memory for at most a day, tied to this visit and never written to disk.",
         rows,
       });
     } catch {

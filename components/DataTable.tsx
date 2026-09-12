@@ -5,7 +5,7 @@ import type { Row, Section } from "@/lib/types";
 import { useFieldNotes } from "@/lib/notes";
 import { LIVE_SECTIONS } from "@/lib/live";
 import { Json, looksLikeJson } from "./Json";
-import { Table, Td, Th, Tooltip, cx } from "./ui";
+import { MoreToggle, Table, Td, Th, Tooltip, cx } from "./ui";
 
 const LONG = 260;
 
@@ -44,13 +44,12 @@ function Value({ v }: { v: unknown }) {
         <span className="[overflow-wrap:anywhere]">
           {open ? text : `${text.slice(0, LONG)}…`}
         </span>{" "}
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          className="whitespace-nowrap text-ink-muted underline decoration-rule-strong underline-offset-2 hover:text-ink"
-        >
-          {open ? "less" : `show all ${text.length}`}
-        </button>
+        <MoreToggle
+          open={open}
+          onToggle={() => setOpen(!open)}
+          more={`show all ${text.length.toLocaleString()}`}
+          less="show less"
+        />
       </>
     );
   }

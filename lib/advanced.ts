@@ -382,7 +382,7 @@ export async function persistenceSection(): Promise<Section> {
   return {
     id: "persistence",
     title: "Tracking Persistence (live demonstration)",
-    note: "This page writes one identifier into seven independent places at once — cookies, localStorage, sessionStorage, IndexedDB, Cache Storage, a service worker and window.name — and separately receives an eighth from the server hidden in the HTTP cache as an ETag. On each visit it restores the identifier from whichever copy survived. Clearing cookies does not erase you; the value respawns. Nothing is sent anywhere — the demonstration is entirely local.",
+    note: "This page writes one identifier into seven independent places at once — cookies, localStorage, sessionStorage, IndexedDB, Cache Storage, a service worker and window.name — and separately receives an eighth from the server hidden in the HTTP cache as an ETag. On each visit it restores the identifier from whichever copy survived. Clearing cookies does not erase you; the value respawns. The seven browser copies never leave your machine. The eighth is the exception on this page: the server issues the ETag and counts how often your browser hands it back, because recognition by a server cannot be demonstrated without the server remembering. That record is one row in memory — first seen, last seen, a count — for at most a day, and is never written to disk.",
     rows: [
       { k: "assigned identifier", v: id },
       { k: "status", v: isNew ? "newly assigned this visit" : "recovered from prior visit" },

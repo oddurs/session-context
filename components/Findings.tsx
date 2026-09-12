@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import type { Finding } from "@/lib/findings";
 import { ICON_FOR_GROUP } from "@/lib/taxonomy";
 import { Icon } from "./Icon";
 import { Json, looksLikeJson } from "./Json";
-import { RuleHeading, cx } from "./ui";
+import { Disclosure, RuleHeading, cx } from "./ui";
 
 function Value({ value }: { value: unknown }) {
   if (value === undefined || value === null || value === "")
@@ -38,7 +37,6 @@ export function FindingArticle({
    */
   compact?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
   const count = finding.evidence.length;
 
   return (
@@ -61,51 +59,33 @@ export function FindingArticle({
         <span aria-hidden className="text-rule-strong">
           ·
         </span>
-        <button
-          type="button"
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
-          className="inline-flex items-baseline gap-hair text-ink-muted hover:text-ink hover:underline"
+        {/* The evidence opens below this line rather than inside it: as part of
+            the row it stretched the row's height and left the other items
+            floating against its middle. */}
+        <Disclosure
+          summary={`${count} value${count === 1 ? "" : "s"} behind this`}
+          openSummary="hide the values"
         >
-          <svg
-            viewBox="0 0 16 16"
-            className={cx(
-              "size-3 translate-y-px text-ink-faint transition-transform",
-              open && "rotate-90"
-            )}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M6 4l4 4-4 4" />
-          </svg>
-          {open ? "hide the values" : `${count} value${count === 1 ? "" : "s"} behind this`}
-        </button>
+          <div className="max-w-wide border-l border-rule pl-4">
+            <dl className="grid gap-x-group gap-y-hair sm:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]">
+              {finding.evidence.map((e, i) => (
+                <div key={i} className="contents">
+                  <dt className="font-mono text-sm break-words text-ink-muted">{e.k}</dt>
+                  <dd className="font-mono text-sm break-words [overflow-wrap:anywhere]">
+                    <Value value={e.v} />
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <a
+              href={`#${finding.sectionId}`}
+              className="mt-snug inline-block text-sm text-ink-muted no-underline hover:text-ink hover:underline"
+            >
+              Everything in this table →
+            </a>
+          </div>
+        </Disclosure>
       </div>
-
-      {open && (
-        <div className="mt-snug max-w-text border-l border-rule pl-4 motion-safe:animate-[rise-in_160ms_ease-out]">
-          <dl className="grid gap-x-group gap-y-hair sm:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]">
-            {finding.evidence.map((e, i) => (
-              <div key={i} className="contents">
-                <dt className="font-mono text-sm break-words text-ink-muted">{e.k}</dt>
-                <dd className="font-mono text-sm break-words [overflow-wrap:anywhere]">
-                  <Value value={e.v} />
-                </dd>
-              </div>
-            ))}
-          </dl>
-          <a
-            href={`#${finding.sectionId}`}
-            className="mt-snug inline-block text-sm text-ink-muted no-underline hover:text-ink hover:underline"
-          >
-            Everything in this table →
-          </a>
-        </div>
-      )}
     </article>
   );
 }

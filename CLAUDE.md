@@ -17,6 +17,16 @@ platform that runs Next.js in its own serverless runtime can report the
 connection-level facts below. `/api/health` is the healthcheck, and reports
 which commit is live.
 
+**Run exactly one replica.** `lib/server-store.ts` keeps the ETag counter and
+the CSS-probe records in a process-local map, deliberately. A second replica is
+a second map, and the recognition demonstration starts telling returning
+visitors it has never seen them. Under load, scale the instance up, never out.
+
+What that store holds is disclosed on the page itself and at `/methods#kept`.
+The site may not make a blanket claim that nothing is transmitted — two
+demonstrations need the server to remember something, and the source is one
+click from every page.
+
 `server.mjs` is a custom Node server, not `next start`. It exists for one
 reason: the page reports connection-level facts the framework cannot see — raw
 header order, HTTP version, socket details — which it injects as `x-dm-*`
