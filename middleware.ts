@@ -21,9 +21,13 @@ export function middleware(request: NextRequest) {
       ? `http://${host.replace("127.0.0.1", "localhost")}`
       : "";
 
+  // Both origins serve this same app, so each has to allow the other in both
+  // directions: the parent frames the embed, and the embed is framed by the
+  // parent. Naming only one of them blocks the demonstration from inside.
   const frameOrigins = [
     "'self'",
     process.env.NEXT_PUBLIC_THIRD_PARTY_ORIGIN ?? "",
+    process.env.NEXT_PUBLIC_SITE_URL ?? "",
     sibling,
   ]
     .filter(Boolean)
