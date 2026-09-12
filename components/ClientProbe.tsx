@@ -13,6 +13,7 @@ import {
   sortSections,
 } from "@/lib/collect";
 import { applyLive, watchLive } from "@/lib/live";
+import { loadNotes, scheduleNotesLoad } from "@/lib/notes";
 import { useMediaQuery } from "@/lib/use-client-value";
 import { useScrollSpy } from "@/lib/use-scroll-spy";
 import {
@@ -83,9 +84,11 @@ const GATED: Gated[] = [
 export function ClientProbe({
   serverSections,
   probeKey,
+  nonce,
 }: {
   serverSections: Section[];
   probeKey: string;
+  nonce?: string;
 }) {
   const [sections, setSections] = useState<Section[]>([]);
   const [extra, setExtra] = useState<Section[]>([]);
@@ -121,6 +124,15 @@ export function ClientProbe({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void collect();
   }, [collect]);
+
+  // Field definitions are fetched when the browser is idle, and immediately if
+  // a pointer reaches the tables first.
+  useEffect(() => {
+    scheduleNotesLoad();
+    const onHover = () => void loadNotes();
+    document.addEventListener("pointerover", onHover, { once: true, passive: true });
+    return () => document.removeEventListener("pointerover", onHover);
+  }, []);
 
   // Anything that can change while you sit here does: cheap values are re-read
   // on a timer, the rest when the browser reports the change.
@@ -259,7 +271,7 @@ export function ClientProbe({
 
   return (
     <>
-      <CssProbe probeKey={probeKey} onResult={addSection} />
+      <CssProbe probeKey={probeKey} onResult={addSection} nonce={nonce} />
 
       {/* dateline: the scale of the thing, stated once */}
       <dl className="grid grid-cols-2 gap-y-4 border-b border-rule py-4 sm:grid-cols-3 lg:grid-cols-6">

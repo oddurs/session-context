@@ -2,7 +2,7 @@
 
 import { memo, useState } from "react";
 import type { Row, Section } from "@/lib/types";
-import { lookupTerm } from "@/lib/glossary";
+import { useFieldNotes } from "@/lib/notes";
 import { LIVE_SECTIONS } from "@/lib/live";
 import { Icon } from "./Icon";
 import { Json, looksLikeJson } from "./Json";
@@ -61,7 +61,8 @@ function Value({ v }: { v: unknown }) {
 }
 
 function Term({ field, sectionId }: { field: string; sectionId?: string }) {
-  const def = lookupTerm(field, sectionId);
+  const lookup = useFieldNotes();
+  const def = lookup?.(field, sectionId);
   if (!def) return null;
   return (
     <Tooltip label={def}>
@@ -143,7 +144,7 @@ export function DataTable({
 function SectionBlockBase({ section, hideEmpty }: { section: Section; hideEmpty?: boolean }) {
   const missing = section.rows.filter((r) => isUnreported(r.v)).length;
   return (
-    <section id={section.id} className="mb-10">
+    <section id={section.id} className="defer-render mb-10">
       <div className="flex items-baseline justify-between gap-4">
         <h5 className="flex items-baseline gap-2 text-base font-semibold tracking-tight">
           {section.title}

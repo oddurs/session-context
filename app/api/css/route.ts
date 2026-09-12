@@ -1,3 +1,4 @@
+import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { recordCssHit } from "@/lib/server-store";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,10 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const key = url.searchParams.get("s");
   const feature = url.searchParams.get("f");
-  if (key && feature) recordCssHit(key, feature);
+  // One page load fires at most a few dozen probes, so this only catches bots.
+  if (key && feature && rateLimit(`css:${clientKey(req)}`, 300)) {
+    recordCssHit(key, feature);
+  }
 
   return new Response(PIXEL, {
     headers: {

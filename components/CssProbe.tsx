@@ -12,9 +12,11 @@ import type { Row, Section } from "@/lib/types";
 export function CssProbe({
   probeKey,
   onResult,
+  nonce,
 }: {
   probeKey: string;
   onResult: (s: Section) => void;
+  nonce?: string;
 }) {
   const report = useCallback(async () => {
     try {
@@ -56,7 +58,7 @@ export function CssProbe({
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: buildProbeCss(probeKey) }} />
+      <style nonce={nonce} dangerouslySetInnerHTML={{ __html: buildProbeCss(probeKey) }} />
       <div aria-hidden className="pointer-events-none absolute -left-[9999px] top-0 h-px w-px overflow-hidden">
         {CSS_PROBES.map((p) => (
           <i key={p.id} id={`cssp-${p.id}`} className="block h-px w-px" />

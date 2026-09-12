@@ -11,6 +11,8 @@
  * and uses whichever hostname you did not open as its cross-site frame.
  */
 import { createServer } from "node:http";
+import { createReadStream, existsSync, statSync } from "node:fs";
+import { extname, join, normalize } from "node:path";
 import { parse } from "node:url";
 import next from "next";
 
@@ -34,6 +36,51 @@ const HOSTS = process.env.HOST
 
 const app = next({ dev, turbopack: true, hostname: "localhost", port: PORT });
 const handle = app.getRequestHandler();
+
+const STATIC_PREFIX = "/_next/static/";
+const CONTENT_TYPES = {
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".map": "application/json; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
+};
+
+/**
+ * Serve the Brotli copies written by scripts/precompress.mjs.
+ *
+ * Next only produces gzip and the platform edge adds nothing, so without this
+ * every visitor downloads about 20% more than they need to. Anything without a
+ * `.br` neighbour, or any client that did not ask for Brotli, falls straight
+ * through to Next.
+ */
+function serveBrotli(req, res) {
+  if (!req.url?.startsWith(STATIC_PREFIX)) return false;
+  if (!/\bbr\b/.test(req.headers["accept-encoding"] ?? "")) return false;
+
+  const path = req.url.split("?")[0].slice(STATIC_PREFIX.length);
+  // Refuse anything that tries to climb out of the static directory.
+  const resolved = join(".next/static", normalize(path));
+  if (!resolved.startsWith(".next/static/")) return false;
+
+  const brotli = `${resolved}.br`;
+  if (!existsSync(brotli)) return false;
+
+  const type = CONTENT_TYPES[extname(resolved)];
+  if (!type) return false;
+
+  res.writeHead(200, {
+    "Content-Type": type,
+    "Content-Encoding": "br",
+    "Content-Length": statSync(brotli).size,
+    // Build output is content-addressed, so it can be cached forever.
+    "Cache-Control": "public, max-age=31536000, immutable",
+    Vary: "Accept-Encoding",
+  });
+  createReadStream(brotli).pipe(res);
+  return true;
+}
 
 /** requests seen per TCP connection, to show keep-alive reuse */
 const perSocket = new WeakMap();
@@ -64,6 +111,7 @@ function listen(host) {
   return new Promise((resolve) => {
     const server = createServer((req, res) => {
       annotate(req);
+      if (serveBrotli(req, res)) return;
       handle(req, res, parse(req.url, true));
     });
     // Hot reloading talks over a websocket, which needs the upgrade handler.
@@ -82,6 +130,25 @@ function listen(host) {
       else throw err;
     });
     server.listen(PORT, host, () => resolve(server));
+  });
+}
+
+/**
+ * A crash should be visible in the platform logs and should end the process,
+ * so the supervisor restarts it, rather than leaving a half-dead server
+ * answering health checks.
+ */
+process.on("unhandledRejection", (reason) => {
+  console.error("[fatal] unhandled rejection:", reason);
+});
+process.on("uncaughtException", (error) => {
+  console.error("[fatal] uncaught exception:", error);
+  process.exit(1);
+});
+for (const signal of ["SIGTERM", "SIGINT"]) {
+  process.on(signal, () => {
+    console.log(`[shutdown] ${signal} received`);
+    process.exit(0);
   });
 }
 

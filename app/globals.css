@@ -174,3 +174,16 @@
     visibility: visible;
   }
 }
+
+/* ── offscreen work ──────────────────────────────────────────── */
+@layer components {
+  /*
+   * Forty tables of 800 rows do not all need laying out at once. The browser
+   * skips rendering for sections outside the viewport and remembers each
+   * one's size after the first pass, so scrolling and anchors stay accurate.
+   */
+  .defer-render {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 640px;
+  }
+}

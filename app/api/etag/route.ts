@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { etagStore, rememberEtag } from "@/lib/server-store";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +36,10 @@ export async function GET(req: Request) {
   }
 
   const id = randomUUID().slice(0, 18);
-  rememberEtag(id, { firstSeen: Date.now(), lastSeen: Date.now(), hits: 1 });
+  // Minting identifiers is the expensive path; revalidations are not limited.
+  if (rateLimit(`etag:${clientKey(req)}`, 60)) {
+    rememberEtag(id, { firstSeen: Date.now(), lastSeen: Date.now(), hits: 1 });
+  }
   return new Response(JSON.stringify({ id }), {
     status: 200,
     headers: {

@@ -130,6 +130,8 @@ export default async function Page() {
   // Stable across reloads once the visitor cookie exists, so the CSS probes can
   // record a JavaScript-disabled visit and still be reported here afterwards.
   const probeKey = c.get("dm_visitor")?.value ?? randomUUID().slice(0, 18);
+  // The probe stylesheet is inline, so it needs the request's nonce.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
     <main className="mx-auto max-w-page px-4 pb-24 sm:px-6">
@@ -139,7 +141,7 @@ export default async function Page() {
         lede="Everything a single web page can work out about the browser, device and person that requested it. The plain-English findings come first — each expands to the exact values behind it — and the complete field-by-field record follows."
         note="Every value is computed and displayed locally. Nothing is transmitted, and no part of this page contacts another company."
       />
-      <ClientProbe serverSections={server} probeKey={probeKey} />
+      <ClientProbe serverSections={server} probeKey={probeKey} nonce={nonce} />
       <footer className="mt-16 border-t border-rule pt-4 text-sm leading-relaxed text-ink-muted">
         <p className="max-w-[76ch]">
           Built with FingerprintJS, ua-parser-js and detectIncognito alongside
