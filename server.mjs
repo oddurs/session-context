@@ -17,6 +17,21 @@ import next from "next";
 const PORT = Number(process.env.PORT) || 3939;
 const dev = process.env.NODE_ENV !== "production";
 
+/**
+ * Locally the server binds both loopback addresses, so `localhost` and
+ * `127.0.0.1` are both reachable — the third-party embedding demonstration
+ * needs two origins and uses whichever hostname you did not open.
+ *
+ * A hosted deployment must instead accept connections from outside the
+ * container, so it binds every interface. Set HOST to override either.
+ */
+const hosted = Boolean(process.env.HOST || process.env.RAILWAY_ENVIRONMENT);
+const HOSTS = process.env.HOST
+  ? [process.env.HOST]
+  : hosted
+    ? ["::"]
+    : ["127.0.0.1", "::1"];
+
 const app = next({ dev, turbopack: true, hostname: "localhost", port: PORT });
 const handle = app.getRequestHandler();
 
@@ -71,13 +86,13 @@ function listen(host) {
 }
 
 app.prepare().then(async () => {
-  const hosts = ["127.0.0.1", "::1"];
-  const bound = (await Promise.all(hosts.map(listen))).filter(Boolean);
-  if (!bound.length) throw new Error("could not bind to any loopback address");
+  const bound = (await Promise.all(HOSTS.map(listen))).filter(Boolean);
+  if (!bound.length) throw new Error(`could not bind to any of: ${HOSTS.join(", ")}`);
 
+  const where = hosted
+    ? `  →  listening on ${HOSTS.join(", ")}:${PORT}\n`
+    : `  →  http://localhost:${PORT}\n  →  http://127.0.0.1:${PORT}\n`;
   console.log(
-    `\n  Session Context — ${dev ? "development, hot reload" : "production"} · Turbopack\n` +
-      `  →  http://localhost:${PORT}\n` +
-      `  →  http://127.0.0.1:${PORT}\n`
+    `\n  Session Context — ${dev ? "development, hot reload" : "production"} · Turbopack\n${where}`
   );
 });
