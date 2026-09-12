@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "NODE_ENV=production node server.mjs",
     "lint": "eslint",
-    "start:next": "next start"
+    "start:next": "next start",
+    "probe": "node scripts/probe.mjs"
   },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.2.0",

@@ -56,6 +56,17 @@
   html {
     scroll-behavior: smooth;
   }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
   body {
     background-color: var(--color-paper);
     color: var(--color-ink);
@@ -66,6 +77,13 @@
   }
   ::selection {
     background: #e6e4dc;
+  }
+  /* Even ragging without hyphenation artefacts */
+  h1, h2, h3, h4, h5 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
   }
   a {
     color: inherit;
@@ -95,5 +113,30 @@
   }
   .tabular {
     font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ── print: a reference document should print like one ───────── */
+@media print {
+  .no-print,
+  nav[aria-label="Contents"],
+  .sticky {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    font-size: 10pt;
+  }
+  a {
+    text-decoration: none;
+  }
+  section {
+    break-inside: avoid-page;
+  }
+  tr {
+    break-inside: avoid;
+  }
+  details {
+    display: none;
   }
 }

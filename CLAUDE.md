@@ -72,7 +72,8 @@ stays behind an explicit `confirm()`.
 most of this code does nothing under SSR:
 
 ```bash
-node scratch/probe.js http://localhost:3939/ 14000   # CDP: console errors + DOM counts
+npm run probe                      # drives headless Chrome against localhost:3939
+npm run probe -- <url> <wait-ms>   # exits non-zero on any console error
 ```
 
 Watch for hydration mismatches specifically. Three have been introduced and

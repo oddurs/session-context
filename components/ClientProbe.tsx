@@ -28,6 +28,16 @@ import { TypingBiometrics } from "./TypingBiometrics";
 import { Icon } from "./Icon";
 import { Button, Checkbox, cx } from "./ui";
 
+/** Raw-data category → the matching group on the methods page. */
+const METHODS_GROUP: Record<string, string> = {
+  server: "passive",
+  identity: "fingerprint",
+  browser: "environment",
+  device: "environment",
+  session: "environment",
+  granted: "gated",
+};
+
 type Gated = { id: string; label: string; warn?: string; run: () => Promise<Section> };
 
 const GATED: Gated[] = [
@@ -94,6 +104,7 @@ export function ClientProbe({
   const [sections, setSections] = useState<Section[]>([]);
   const [extra, setExtra] = useState<Section[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [collectedAt, setCollectedAt] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const [hideEmpty, setHideEmpty] = useState(false);
@@ -101,12 +112,19 @@ export function ClientProbe({
 
   const collect = useCallback(async () => {
     setBusy("collect");
+    setError(null);
     const t0 = performance.now();
-    const s = await collectAll();
-    setElapsed(performance.now() - t0);
-    setSections(s);
-    setCollectedAt(new Date().toLocaleTimeString());
-    setBusy(null);
+    try {
+      // Partial results render as they arrive, so the page is never blank.
+      const s = await collectAll(setSections);
+      setSections(s);
+      setElapsed(performance.now() - t0);
+      setCollectedAt(new Date().toLocaleTimeString());
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
   }, []);
 
   useEffect(() => {
@@ -135,13 +153,19 @@ export function ClientProbe({
     }
   };
 
+  const base = useMemo(
+    () => sortSections([...serverSections, ...sections, ...extra]),
+    [serverSections, sections, extra]
+  );
+
+  // Only the interaction section changes on each tick. Every other section
+  // keeps its object identity, so the memoised tables do not re-render.
   const all = useMemo(() => {
-    void tick; // re-materialise the live rows on each tick
-    const merged = sortSections([...serverSections, ...sections, ...extra]);
-    return merged.map((s) =>
+    void tick;
+    return base.map((s) =>
       s.id === "interaction" ? { ...s, rows: liveInteractionRows() } : s
     );
-  }, [serverSections, sections, extra, tick]);
+  }, [base, tick]);
 
   const findings = useMemo(() => deriveFindings(all), [all]);
   const fieldCount = all.reduce((n, s) => n + s.rows.length, 0);
@@ -214,11 +238,20 @@ export function ClientProbe({
       <CssProbe probeKey={probeKey} onResult={addSection} />
 
       {/* dateline: the scale of the thing, stated once */}
-      <dl className="grid grid-cols-2 gap-x-8 gap-y-4 border-b border-rule py-4 sm:grid-cols-3 lg:grid-cols-6">
-        {dateline.map((d) => (
-          <div key={d.label}>
-            <dt className="label">{d.label}</dt>
-            <dd className="mt-0.5 text-base tabular">{d.value}</dd>
+      <dl className="grid grid-cols-2 gap-y-4 border-b border-rule py-4 sm:grid-cols-3 lg:grid-cols-6">
+        {dateline.map((d, i) => (
+          <div
+            key={d.label}
+            className={cx(
+              "min-w-0",
+              i > 0 && "lg:border-l lg:border-rule lg:pl-5",
+              i % 2 === 1 && "border-l border-rule pl-5 sm:border-l-0 sm:pl-0 lg:border-l lg:pl-5"
+            )}
+          >
+            <dt className="text-xs text-ink-faint">{d.label}</dt>
+            <dd className="mt-1 truncate text-[1.05rem] font-medium leading-none tracking-[-0.01em] tabular">
+              {d.value}
+            </dd>
           </div>
         ))}
       </dl>
@@ -255,7 +288,7 @@ export function ClientProbe({
 
       <div className="lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
         {/* contents rail */}
-        <nav className="mb-10 lg:sticky lg:top-14 lg:mb-0 lg:self-start">
+        <nav aria-label="Contents" className="mb-10 lg:sticky lg:top-14 lg:mb-0 lg:self-start">
           <div className="label mb-2 border-b border-rule pb-1.5">Contents</div>
           <ul className="space-y-1 text-sm">
             <li>
@@ -320,7 +353,30 @@ export function ClientProbe({
               What this page worked out about you, in the order it matters. Every
               statement expands to the exact values it came from.
             </p>
-            <Findings findings={findings} groups={FINDING_GROUPS} />
+            {error ? (
+              <div className="border border-rule bg-raised p-4">
+                <p className="text-base font-medium">Collection failed.</p>
+                <p className="mt-1 max-w-[70ch] font-mono text-sm text-ink-muted">{error}</p>
+                <Button className="mt-3" onClick={() => void collect()}>
+                  Try again
+                </Button>
+              </div>
+            ) : findings.length === 0 ? (
+              <div aria-busy="true" className="space-y-6">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="border-t border-rule pt-5 first:border-t-0 first:pt-0">
+                    <div className="h-4 w-2/3 animate-pulse bg-sunken" />
+                    <div className="mt-3 h-3 w-full animate-pulse bg-sunken" />
+                    <div className="mt-1.5 h-3 w-5/6 animate-pulse bg-sunken" />
+                  </div>
+                ))}
+                <p className="text-sm text-ink-faint">
+                  Measuring… {all.length} of 40 tables collected so far.
+                </p>
+              </div>
+            ) : (
+              <Findings findings={findings} groups={FINDING_GROUPS} />
+            )}
 
             <div className="mt-10 border-t border-rule pt-5">
               <h3 className="text-base font-medium">Try it yourself</h3>
@@ -375,10 +431,18 @@ export function ClientProbe({
               return (
                 <div key={c.id} id={`cat-${c.id}`} className="mb-16">
                   <div className="mb-8 border-b border-ink pb-2">
-                    <h3 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
-                      <Icon name={c.icon} className="size-4 text-ink-muted" />
-                      {c.title}
-                    </h3>
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+                      <h3 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+                        <Icon name={c.icon} className="size-4 text-ink-muted" />
+                        {c.title}
+                      </h3>
+                      <a
+                        href={`/methods#${METHODS_GROUP[c.id] ?? ""}`}
+                        className="text-sm text-ink-muted no-underline hover:text-ink hover:underline"
+                      >
+                        How these work →
+                      </a>
+                    </div>
                     <p className="mt-1.5 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
                       {c.blurb}
                     </p>

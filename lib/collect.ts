@@ -1163,9 +1163,17 @@ import { fingerprintSections, privacySection, uaParserSection } from "./libs";
 
 import { PLACEMENT, SECTION_ORDER } from "./taxonomy";
 
-export async function collectAll(): Promise<Section[]> {
+/**
+ * Collect in two passes so the page has something to show immediately: the
+ * cheap probes land in a few hundred milliseconds, the expensive ones
+ * (graphics, benchmarks, composite fingerprinting) follow.
+ */
+export async function collectAll(
+  onPartial?: (sections: Section[]) => void
+): Promise<Section[]> {
   installLiveListeners();
-  const sync = [
+
+  const immediate = [
     navigatorSection(),
     screenSection(),
     preferencesSection(),
@@ -1180,29 +1188,35 @@ export async function collectAll(): Promise<Section[]> {
     uaParserSection(),
     tamperSection(),
   ];
-  const async = await Promise.all([
+  onPartial?.(sortSections(immediate));
+
+  const quick = await Promise.all([
     uaDataSection(),
     networkSection(),
     hardwareSection(),
     storageSection(),
+    devicesSection(),
+    permissionsSection(),
+    persistenceSection(),
+    crossTabSection(),
+    privacySection(),
+  ]);
+  onPartial?.(sortSections([...immediate, ...quick]));
+
+  const heavy = await Promise.all([
     graphicsSection(),
     fingerprintSection(),
     codecSection(),
-    devicesSection(),
-    permissionsSection(),
     workerSection(),
-    persistenceSection(),
     systemUISection(),
-    benchmarkSection(),
     mediaCapabilitiesSection(),
-    privacySection(),
-    crossTabSection(),
+    benchmarkSection(),
     thermalSection(),
   ]);
-  const fp = await fingerprintSections();
+  onPartial?.(sortSections([...immediate, ...quick, ...heavy]));
 
-  const all = [...sync, ...async, ...fp];
-  return sortSections(all);
+  const fp = await fingerprintSections();
+  return sortSections([...immediate, ...quick, ...heavy, ...fp]);
 }
 
 /** Attach category + subgroup from the taxonomy and sort into reading order. */

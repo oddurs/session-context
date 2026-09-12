@@ -20,9 +20,11 @@ export function SiteHeader({
   ] as const;
 
   return (
-    <header className="border-b border-ink pt-10 pb-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Session Context</h1>
+    <header className="pt-12 pb-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3 border-b border-rule pb-3">
+        <h1 className="text-[1.9rem] font-semibold leading-none tracking-[-0.025em]">
+          Session Context
+        </h1>
         <nav className="flex items-center gap-5 text-sm">
           {tabs.map((t) => (
             <Link
@@ -50,10 +52,14 @@ export function SiteHeader({
           )}
         </nav>
       </div>
-      <h2 className="mt-4 text-lg font-medium tracking-tight">{title}</h2>
-      <p className="mt-2 max-w-[74ch] text-base leading-relaxed text-ink-muted">{lede}</p>
+      <h2 className="mt-7 max-w-[46ch] text-xl font-medium leading-snug tracking-[-0.015em]">
+        {title}
+      </h2>
+      <p className="mt-3 max-w-[68ch] text-base leading-[1.65] text-ink-muted">{lede}</p>
       {note && (
-        <p className="mt-2 max-w-[74ch] text-sm leading-relaxed text-ink-faint">{note}</p>
+        <p className="mt-4 max-w-[64ch] border-t border-rule pt-3 text-sm leading-relaxed text-ink-faint">
+          {note}
+        </p>
       )}
     </header>
   );

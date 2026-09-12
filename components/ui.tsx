@@ -119,9 +119,11 @@ export function Checkbox({
 }) {
   return (
     <label className="inline-flex cursor-pointer select-none items-center gap-2 text-sm text-ink-muted hover:text-ink">
+      {/* The mark is always present and only changes opacity, so checking it
+          cannot shift the baseline. */}
       <span
         className={cx(
-          "relative grid size-3.5 place-items-center border",
+          "relative grid size-3.5 shrink-0 place-items-center border leading-none transition-colors",
           checked ? "border-ink" : "border-rule-strong"
         )}
       >
@@ -131,11 +133,16 @@ export function Checkbox({
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
         />
-        {checked && (
-          <svg viewBox="0 0 12 12" className="size-2.5" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M2.5 6.2 4.8 8.5 9.5 3.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        )}
+        <svg
+          viewBox="0 0 12 12"
+          className={cx("size-2.5 transition-opacity", checked ? "opacity-100" : "opacity-0")}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden="true"
+        >
+          <path d="M2.5 6.2 4.8 8.5 9.5 3.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </span>
       {children}
     </label>

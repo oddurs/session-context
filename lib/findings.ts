@@ -186,11 +186,23 @@ export function deriveFindings(sections: Section[]): Finding[] {
   );
 
   const langs = g("navigator", "languages");
+  const languageNames = (() => {
+    if (!has(langs)) return undefined;
+    try {
+      const dn = new Intl.DisplayNames(undefined, { type: "language" });
+      const names = String(langs)
+        .split(", ")
+        .map((tag) => dn.of(tag) ?? tag);
+      return [...new Set(names)].join(", ");
+    } catch {
+      return String(langs);
+    }
+  })();
   add(
     {
       id: "f-language",
       group: "Where you are",
-      headline: `You read ${langs}.`,
+      headline: `You read ${languageNames}.`,
       detail:
         "Browsers send a ranked list of the languages you prefer on every single request. The order is a personal detail — a second or third language often narrows down where you are from, or where you have lived.",
       how: "Sent automatically",

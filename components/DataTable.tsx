@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import type { Row, Section } from "@/lib/types";
 import { lookupTerm } from "@/lib/glossary";
 import { Icon } from "./Icon";
@@ -106,7 +106,7 @@ export function DataTable({ rows, hideEmpty }: { rows: Row[]; hideEmpty?: boolea
   );
 }
 
-export function SectionBlock({ section, hideEmpty }: { section: Section; hideEmpty?: boolean }) {
+function SectionBlockBase({ section, hideEmpty }: { section: Section; hideEmpty?: boolean }) {
   const missing = section.rows.filter((r) => isUnreported(r.v)).length;
   return (
     <section id={section.id} className="mb-10">
@@ -126,3 +126,6 @@ export function SectionBlock({ section, hideEmpty }: { section: Section; hideEmp
     </section>
   );
 }
+
+/** Sections are re-rendered only when their own data changes. */
+export const SectionBlock = memo(SectionBlockBase);
