@@ -784,8 +784,13 @@ export async function probeSensors(): Promise<GatedResult> {
     return {
       section: wrap(rows),
       outcome: "unsupported",
-      reason:
-        "The events fired, but every reading in them was empty — which on a desktop or laptop means there is no accelerometer or gyroscope behind them. On a phone this returns real numbers immediately.",
+      // Only iOS gates these behind a prompt, so the presence of that gate is
+      // a reliable tell for which machine this is. Saying "on a phone this
+      // returns real numbers immediately" to someone holding a phone that just
+      // returned nothing would be the page contradicting itself.
+      reason: DOE.requestPermission
+        ? "The events fired, but every reading in them was empty. On a handset that usually means the sensors are being withheld — Lockdown Mode and some managed-device profiles do exactly that, and the page cannot tell which."
+        : "The events fired, but every reading in them was empty, which on a desktop or laptop means there is no accelerometer or gyroscope behind them. A phone returns real numbers here.",
     };
   }
 

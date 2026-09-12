@@ -1,0 +1,75 @@
+# Production, watched on a clock rather than on a commit.
+#
+# This used to be the last job of CI, which was a trap: Railway's "Wait for CI"
+# holds a deployment until the workflow run concludes, and that job concluded
+# only once the deployment was live. Moving it here means it can never deadlock
+# the thing it is checking — and a schedule catches what a push-triggered run
+# never could, which is the site falling over at three in the morning.
+#
+# It also answers the question "Wait for CI" quietly introduces: a failed
+# workflow now skips the deploy, so production can sit on an older commit with
+# nothing to say so. This says so.
+name: Production
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: production-check
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify the live site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Needed to tell "behind by two commits" from "a commit I have never
+          # heard of".
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Which commit is live
+        id: live
+        run: |
+          body=$(curl -sf --max-time 20 "$SITE/api/health") || {
+            echo "::error::$SITE/api/health did not answer"
+            exit 1
+          }
+          live=$(node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);process.stdout.write(j.commit??"")})' <<<"$body")
+          started=$(node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);process.stdout.write(j.startedAt??"")})' <<<"$body")
+          echo "live=$live" >> "$GITHUB_OUTPUT"
+          echo "Live commit ${live:-unknown}, serving since ${started:-unknown}"
+        env:
+          SITE: https://sessioncontext.org
+
+      - name: Is production up to date with main
+        run: |
+          live="${{ steps.live.outputs.live }}"
+          head=$(git rev-parse origin/main)
+          if [ -z "$live" ]; then
+            echo "::warning::the health endpoint reported no commit"
+          elif [ "$live" = "$head" ]; then
+            echo "Production is on main ($head)"
+          elif git merge-base --is-ancestor "$live" "$head" 2>/dev/null; then
+            behind=$(git rev-list --count "$live".."$head")
+            # A deploy in flight looks exactly like this for a minute or two,
+            # so it is said out loud rather than failed on.
+            echo "::warning::production is $behind commit(s) behind main — a deploy may be in flight, or one was skipped"
+          else
+            echo "::warning::production is on $live, which is not an ancestor of main"
+          fi
+
+      - name: Drive a real browser at production
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          npm run probe -- https://sessioncontext.org/ 60000
+          npm run probe -- https://sessioncontext.org/methods 20000
