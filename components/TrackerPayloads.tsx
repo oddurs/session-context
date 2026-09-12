@@ -22,15 +22,15 @@ export function TrackerPayloads({ sections }: { sections: Section[] }) {
   if (!mounted || !sections.length) return null;
 
   return (
-    <section id="trackers" className="mb-8">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink pb-1.5">
-        <h3 className="flex items-center gap-2 text-base font-semibold tracking-tight">
+    <section id="trackers" className="mb-10">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h5 className="flex items-center gap-2 text-base font-semibold tracking-tight">
           <Icon name="megaphone" className="size-4 text-ink-muted" />
           What a tracker would send about you
-        </h3>
-        <Badge tone="outline">constructed here · never sent</Badge>
+        </h5>
+        <Badge>constructed here · never sent</Badge>
       </div>
-      <p className="mt-2 mb-3 max-w-[78ch] text-sm leading-relaxed text-ink-muted">
+      <p className="mt-1.5 mb-4 max-w-[78ch] text-sm leading-relaxed text-ink-muted">
         These are the actual request shapes used by the most widely deployed
         analytics and advertising tags, filled in with the values collected from
         you on this page. They are rendered for inspection and go nowhere: this

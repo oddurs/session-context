@@ -47,27 +47,40 @@ const GATED: Gated[] = [
   },
 ];
 
-/** Highlights whichever part of the document is currently on screen. */
+/**
+ * Tracks the section currently under the top of the viewport, the way
+ * documentation sidebars do: whichever heading you have most recently passed.
+ */
 function useScrollSpy(ids: string[]) {
-  const [active, setActive] = useState<string>("");
+  const [active, setActive] = useState("");
+
   useEffect(() => {
-    const seen = new Map<string, number>();
-    const obs = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) seen.set(e.target.id, e.intersectionRatio);
-        const best = [...seen.entries()]
-          .filter(([, r]) => r > 0)
-          .sort((a, b) => b[1] - a[1])[0];
-        if (best) setActive(best[0]);
-      },
-      { rootMargin: "-72px 0px -60% 0px", threshold: [0, 0.2, 0.6] }
-    );
-    for (const id of ids) {
-      const el = document.getElementById(id);
-      if (el) obs.observe(el);
-    }
-    return () => obs.disconnect();
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      let current = ids[0] ?? "";
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        // 96px down from the top: just below the sticky bar.
+        if (el.getBoundingClientRect().top <= 96) current = id;
+        else break;
+      }
+      setActive(current);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    addEventListener("scroll", onScroll, { passive: true });
+    addEventListener("resize", onScroll);
+    return () => {
+      removeEventListener("scroll", onScroll);
+      removeEventListener("resize", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, [ids]);
+
   return active;
 }
 
@@ -137,11 +150,25 @@ export function ClientProbe({
     0
   );
 
-  const navIds = useMemo(
-    () => ["plain", ...CATEGORIES.map((c) => `cat-${c.id}`)],
-    []
-  );
-  const active = useScrollSpy(navIds);
+  // Every anchor in reading order: the findings, then each category and the
+  // tables inside it.
+  const navIds = useMemo(() => {
+    const ids = ["plain"];
+    for (const c of CATEGORIES) {
+      const present = all.filter((s) => s.group === c.title);
+      if (!present.length) continue;
+      ids.push(`cat-${c.id}`, ...present.map((s) => s.id));
+    }
+    return ids;
+  }, [all]);
+  const activeId = useScrollSpy(navIds);
+
+  // Which category the active anchor belongs to.
+  const activeCategory = useMemo(() => {
+    if (activeId.startsWith("cat-")) return activeId.slice(4);
+    const section = all.find((s) => s.id === activeId);
+    return CATEGORIES.find((c) => c.title === section?.group)?.id ?? "";
+  }, [activeId, all]);
 
   const asJSON = () => ({
     collectedAt,
@@ -200,9 +227,14 @@ export function ClientProbe({
       <div className="sticky top-0 z-40 -mx-4 mb-10 border-b border-rule bg-paper/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6">
         <div className="mx-auto flex max-w-page items-center gap-4">
           <span className="truncate text-sm text-ink-muted">
-            {active === "plain" || !active
+            {activeId === "plain" || !activeId
               ? "In plain English"
-              : CATEGORIES.find((c) => `cat-${c.id}` === active)?.title ?? "Session context"}
+              : [
+                  CATEGORIES.find((c) => c.id === activeCategory)?.title,
+                  all.find((s) => s.id === activeId)?.title,
+                ]
+                  .filter(Boolean)
+                  .join("  ·  ")}
           </span>
           <div className="ml-auto flex items-center gap-1">
             <Button variant="quiet" onClick={() => void collect()} disabled={busy !== null}>
@@ -230,8 +262,10 @@ export function ClientProbe({
               <a
                 href="#plain"
                 className={cx(
-                  "block py-0.5 no-underline hover:text-ink",
-                  active === "plain" ? "font-medium text-ink" : "text-ink-muted"
+                  "block border-l py-0.5 pl-3 no-underline transition-colors hover:text-ink",
+                  activeId === "plain"
+                    ? "border-ink font-medium text-ink"
+                    : "border-transparent text-ink-muted"
                 )}
               >
                 In plain English
@@ -240,26 +274,31 @@ export function ClientProbe({
             {CATEGORIES.map((c) => {
               const present = all.filter((s) => s.group === c.title);
               if (!present.length) return null;
-              const on = active === `cat-${c.id}`;
+              const on = activeCategory === c.id;
               return (
                 <li key={c.id}>
                   <a
                     href={`#cat-${c.id}`}
                     className={cx(
-                      "flex items-baseline gap-2 py-0.5 no-underline hover:text-ink",
-                      on ? "font-medium text-ink" : "text-ink-muted"
+                      "flex items-baseline gap-2 border-l py-0.5 pl-3 no-underline transition-colors hover:text-ink",
+                      on ? "border-ink font-medium text-ink" : "border-transparent text-ink-muted"
                     )}
                   >
                     <span className="flex-1">{c.title}</span>
                     <span className="text-xs text-ink-faint tabular">{present.length}</span>
                   </a>
                   {on && (
-                    <ul className="mb-1 ml-0 border-l border-rule pl-3">
+                    <ul className="mb-1">
                       {present.map((s) => (
                         <li key={s.id}>
                           <a
                             href={`#${s.id}`}
-                            className="block py-0.5 text-sm text-ink-muted no-underline hover:text-ink"
+                            className={cx(
+                              "block border-l py-0.5 pl-6 text-sm no-underline transition-colors hover:text-ink",
+                              activeId === s.id
+                                ? "border-ink text-ink"
+                                : "border-rule text-ink-muted"
+                            )}
                           >
                             {s.title}
                           </a>
