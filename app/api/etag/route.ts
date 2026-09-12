@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { etagStore } from "@/lib/server-store";
+import { etagStore, rememberEtag } from "@/lib/server-store";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
   }
 
   const id = randomUUID().slice(0, 18);
-  etagStore.set(id, { firstSeen: Date.now(), lastSeen: Date.now(), hits: 1 });
+  rememberEtag(id, { firstSeen: Date.now(), lastSeen: Date.now(), hits: 1 });
   return new Response(JSON.stringify({ id }), {
     status: 200,
     headers: {

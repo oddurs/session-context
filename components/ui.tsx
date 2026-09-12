@@ -170,8 +170,13 @@ export function Checkbox({
   );
 }
 
-/* ── tooltip: a light annotation panel ───────────────────────── */
+/* ── tooltip ─────────────────────────────────────────────────── */
 
+/**
+ * The panel is drawn by a pseudo-element from `data-tip`, so several hundred
+ * tooltips cost one element each instead of an element, a span and a text
+ * node. The same text reaches assistive technology through `aria-label`.
+ */
 export function Tooltip({
   children,
   label,
@@ -184,24 +189,16 @@ export function Tooltip({
 }) {
   return (
     <span
-      className="group/tip relative inline-flex align-middle"
+      className="tip relative inline-flex align-middle"
+      data-tip={label}
       // Hundreds of these appear in the tables. Making each one a tab stop
-      // would bury every real control, so the text is exposed to assistive
+      // would bury every real control, so the text reaches assistive
       // technology by label instead.
       tabIndex={focusable ? 0 : undefined}
       role="note"
       aria-label={label}
     >
       {children}
-      <span
-        className="pointer-events-none invisible absolute left-0 top-[calc(100%+6px)] z-50 w-[min(23rem,72vw)]
-                   border border-rule-strong bg-surface px-3 py-2 font-sans text-sm font-normal leading-snug
-                   text-ink opacity-0 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.28)] transition-opacity duration-100
-                   group-hover/tip:visible group-hover/tip:opacity-100
-                   group-focus/tip:visible group-focus/tip:opacity-100"
-      >
-        {label}
-      </span>
     </span>
   );
 }

@@ -5,6 +5,7 @@ import type { Section } from "@/lib/types";
 import {
   collectAll,
   liveCheapSections,
+  liveEventSections,
   liveSection,
   probeDeviceLabels,
   probeGeolocation,
@@ -190,7 +191,7 @@ export function ClientProbe({
 
     const timer = setInterval(() => merge(liveCheapSections()), 1000);
     const stop = watchLive((kind) => {
-      if (kind === "cheap") merge(liveCheapSections());
+      if (kind === "cheap") merge([...liveCheapSections(), ...liveEventSections()]);
       else void liveSection(kind).then(merge);
     });
 

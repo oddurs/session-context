@@ -485,6 +485,14 @@ function textMetricHash(): string {
 
 /* ── performance class ───────────────────────────────────────── */
 
+/** Hand the main thread back so a benchmark never becomes one long task. */
+const yieldToBrowser = () =>
+  new Promise<void>((resolve) => {
+    const scheduler = (globalThis as any).scheduler;
+    if (scheduler?.yield) scheduler.yield().then(resolve);
+    else setTimeout(resolve, 0);
+  });
+
 export async function benchmarkSection(): Promise<Section> {
   const t0 = performance.now();
   let acc = 0;
@@ -493,12 +501,16 @@ export async function benchmarkSection(): Promise<Section> {
   // Publish the accumulator so the loop cannot be optimized away as dead code.
   (globalThis as any).__dmBenchAcc = acc;
 
+  await yieldToBrowser();
+
   const t1 = performance.now();
   const arr = new Float64Array(1_000_000);
   for (let i = 0; i < arr.length; i++) arr[i] = (arr.length - i) * 1.000001;
   arr.sort();
   const memMs = performance.now() - t1;
   (globalThis as any).__dmBenchSum = arr[0] + arr[arr.length - 1];
+
+  await yieldToBrowser();
 
   const t2 = performance.now();
   const data = new Uint8Array(1_000_000);
@@ -758,6 +770,7 @@ export async function crossTabSection(): Promise<Section> {
 export async function thermalSection(): Promise<Section> {
   const runs: number[] = [];
   for (let r = 0; r < 5; r++) {
+    await yieldToBrowser();
     const t = performance.now();
     let acc = 0;
     for (let i = 1; i <= 1_500_000; i++) acc += Math.sqrt(i) * Math.sin(i);

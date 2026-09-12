@@ -21,12 +21,26 @@ const bytes = (b: unknown) =>
   typeof b === "number" ? `${b.toLocaleString()} (${(b / 1048576).toFixed(1)} MiB)` : b;
 
 
-const mq = (q: string) => probe(() => matchMedia(q).matches);
+/**
+ * Media query lists are cached: creating them is not free, and the live timer
+ * would otherwise churn through dozens of new objects every second.
+ */
+const mqCache = new Map<string, MediaQueryList>();
+function mql(query: string): MediaQueryList {
+  let list = mqCache.get(query);
+  if (!list) {
+    list = matchMedia(query);
+    mqCache.set(query, list);
+  }
+  return list;
+}
+
+const mq = (q: string) => probe(() => mql(q).matches);
 
 /** First matching value from a set of media-query candidates. */
 function mqPick(feature: string, values: string[]) {
   return probe(() => {
-    for (const v of values) if (matchMedia(`(${feature}: ${v})`).matches) return v;
+    for (const v of values) if (mql(`(${feature}: ${v})`).matches) return v;
     return "no match";
   });
 }
@@ -173,7 +187,7 @@ function preferencesSection(): Section {
       { k: "color-gamut", v: mqPick("color-gamut", ["rec2020", "p3", "srgb"]) },
       { k: "dynamic-range", v: mqPick("dynamic-range", ["high", "standard"]) },
       { k: "video-dynamic-range", v: mqPick("video-dynamic-range", ["high", "standard"]) },
-      { k: "monochrome", v: probe(() => (matchMedia("(monochrome: 0)").matches ? "0 (color)" : "non-zero")) },
+      { k: "monochrome", v: probe(() => (mql("(monochrome: 0)").matches ? "0 (color)" : "non-zero")) },
       { k: "pointer", v: mqPick("pointer", ["fine", "coarse", "none"]) },
       { k: "any-pointer", v: mqPick("any-pointer", ["fine", "coarse", "none"]) },
       { k: "hover", v: mqPick("hover", ["hover", "none"]) },
@@ -186,7 +200,7 @@ function preferencesSection(): Section {
       { k: "overflow-inline", v: mqPick("overflow-inline", ["scroll", "none"]) },
       { k: "grid", v: mqPick("grid", ["1", "0"]), n: "1 = terminal/grid device" },
       { k: "print media", v: mq("print") },
-      { k: "resolution (dppx)", v: probe(() => { for (const d of [1,1.25,1.5,2,2.5,3,4]) if (matchMedia(`(resolution: ${d}dppx)`).matches) return `${d}dppx`; return "other"; }) },
+      { k: "resolution (dppx)", v: probe(() => { for (const d of [1,1.25,1.5,2,2.5,3,4]) if (mql(`(resolution: ${d}dppx)`).matches) return `${d}dppx`; return "other"; }) },
     ],
   };
 }
@@ -1168,6 +1182,26 @@ import { PLACEMENT, SECTION_ORDER } from "./taxonomy";
  * cheap probes land in a few hundred milliseconds, the expensive ones
  * (graphics, benchmarks, composite fingerprinting) follow.
  */
+/**
+ * Run a batch of section probes so that one failure costs one section rather
+ * than the whole collection.
+ */
+async function settle(jobs: Promise<Section>[]): Promise<Section[]> {
+  const results = await Promise.allSettled(jobs);
+  return results.flatMap((r, i) =>
+    r.status === "fulfilled"
+      ? [r.value]
+      : [
+          {
+            id: `failed-${i}`,
+            title: "Collection failed for this section",
+            note: "One probe threw where it should have returned a value. The rest of the page is unaffected.",
+            rows: [{ k: "error", v: String(r.reason?.message ?? r.reason) }],
+          } as Section,
+        ]
+  );
+}
+
 export async function collectAll(
   onPartial?: (sections: Section[]) => void
 ): Promise<Section[]> {
@@ -1185,12 +1219,12 @@ export async function collectAll(
     audioSection(),
     performanceSection(),
     interactionSection(),
-    uaParserSection(),
     tamperSection(),
   ];
   onPartial?.(sortSections(immediate));
 
-  const quick = await Promise.all([
+  const quick = await settle([
+    uaParserSection(),
     uaDataSection(),
     networkSection(),
     hardwareSection(),
@@ -1203,7 +1237,7 @@ export async function collectAll(
   ]);
   onPartial?.(sortSections([...immediate, ...quick]));
 
-  const heavy = await Promise.all([
+  const heavy = await settle([
     graphicsSection(),
     fingerprintSection(),
     codecSection(),
@@ -1215,7 +1249,7 @@ export async function collectAll(
   ]);
   onPartial?.(sortSections([...immediate, ...quick, ...heavy]));
 
-  const fp = await fingerprintSections();
+  const fp = await fingerprintSections().catch(() => []);
   return sortSections([...immediate, ...quick, ...heavy, ...fp]);
 }
 
@@ -1224,13 +1258,14 @@ export async function collectAll(
  * lookups, no async work.
  */
 export function liveCheapSections(): Section[] {
-  return [
-    screenSection(),
-    preferencesSection(),
-    documentSection(),
-    localeSection(),
-    interactionSection(),
-  ];
+  // Only the clock and the interaction counters move by themselves. Screen,
+  // preferences and document state are re-read from their change events.
+  return [localeSection(), interactionSection()];
+}
+
+/** Re-read on resize, theme change, focus change and visibility change. */
+export function liveEventSections(): Section[] {
+  return [screenSection(), preferencesSection(), documentSection()];
 }
 
 /** Sections re-read when the browser reports the underlying thing changed. */

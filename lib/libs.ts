@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import FingerprintJS, { componentsToDebugString } from "@fingerprintjs/fingerprintjs";
-import UAParser from "ua-parser-js";
-import { detectIncognito } from "detectincognitojs";
 import type { Row, Section } from "./types";
+
+/*
+ * These three libraries are a large share of the JavaScript on the page and
+ * none of them is needed for the first paint, so they are fetched only when
+ * their section runs.
+ */
 
 /** Flatten one FingerprintJS component into a printable value. */
 function comp(v: any): unknown {
@@ -16,6 +19,9 @@ export async function fingerprintSections(): Promise<Section[]> {
   const rows: Row[] = [];
   const compRows: Row[] = [];
   try {
+    const { default: FingerprintJS, componentsToDebugString } = await import(
+      "@fingerprintjs/fingerprintjs"
+    );
     const agent = await FingerprintJS.load({ debug: false });
     const res = await agent.get();
     rows.push(
@@ -54,7 +60,8 @@ export async function fingerprintSections(): Promise<Section[]> {
   ];
 }
 
-export function uaParserSection(): Section {
+export async function uaParserSection(): Promise<Section> {
+  const { UAParser } = await import("ua-parser-js");
   const r: any = new (UAParser as any)().getResult();
   return {
     id: "ua-parsed",
@@ -81,6 +88,7 @@ export async function privacySection(): Promise<Section> {
   const rows: Row[] = [];
 
   try {
+    const { detectIncognito } = await import("detectincognitojs");
     const inc = await detectIncognito();
     rows.push(
       { k: "private/incognito mode", v: inc.isPrivate, n: "detectIncognito heuristics" },
