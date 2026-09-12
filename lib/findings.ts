@@ -54,13 +54,16 @@ function has(v: unknown): boolean {
   );
 }
 
+/** The one group that only exists after you approve a prompt. */
+export const GRANTED_GROUP = "What you handed over";
+
 export const FINDING_GROUPS = [
   "Who you are",
   "Where you are",
   "The machine in front of you",
   "Your browser and settings",
   "What you did on this page",
-  "What you handed over",
+  GRANTED_GROUP,
 ];
 
 export function deriveFindings(sections: Section[]): Finding[] {

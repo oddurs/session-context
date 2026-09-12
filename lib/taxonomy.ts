@@ -76,7 +76,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     id: "granted",
-    title: "What you handed over",
+    title: "Unlocked by permission",
     icon: "key",
     blurb:
       "Everything above needed no permission at all. These sections appear only after you press a button and approve the browser's prompt.",

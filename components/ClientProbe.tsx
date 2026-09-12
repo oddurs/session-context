@@ -20,17 +20,16 @@ import {
   probeScreenDetails,
   probeSensors,
 } from "@/lib/advanced";
-import { FINDING_GROUPS, deriveFindings } from "@/lib/findings";
+import { FINDING_GROUPS, GRANTED_GROUP, deriveFindings } from "@/lib/findings";
 import { CATEGORIES } from "@/lib/taxonomy";
 import { SectionBlock, isUnreported } from "./DataTable";
-import { Json, looksLikeJson } from "./Json";
 import { Findings } from "./Findings";
 import { CssProbe } from "./CssProbe";
 import { ThirdParty } from "./ThirdParty";
 import { TrackerPayloads } from "./TrackerPayloads";
 import { TypingBiometrics } from "./TypingBiometrics";
 import { Icon } from "./Icon";
-import { Button, Card, Checkbox, RuleHeading, Table, Td, cx } from "./ui";
+import { Button, Checkbox, RuleHeading, cx } from "./ui";
 
 /** Raw-data category → the matching group on the methods page. */
 const METHODS_GROUP: Record<string, string> = {
@@ -49,18 +48,6 @@ type Gated = {
   reveals: string;
   warn?: string;
   run: () => Promise<Section>;
-};
-
-/** The rows worth showing inline when a probe comes back. */
-const HIGHLIGHT: Record<string, string[]> = {
-  geolocation: ["latitude", "longitude", "accuracy", "timestamp"],
-  "local-fonts": ["fonts installed", "families"],
-  "device-labels": ["audio track label", "video track label"],
-  "screen-details": ["screens attached", "current screen label"],
-  clipboard: ["clipboard length", "clipboard contents"],
-  idle: ["user state", "screen state"],
-  sensors: ["orientation sample", "motion sample"],
-  schemes: [],
 };
 
 /** Did the browser actually hand anything over? */
@@ -239,6 +226,20 @@ export function ClientProbe({
   const all = useMemo(() => applyLive(base, live), [base, live]);
 
   const findings = useMemo(() => deriveFindings(all), [all]);
+  // Findings about what you handed over belong beside the buttons that asked,
+  // not in the list of what was taken without asking.
+  const passiveFindings = useMemo(
+    () => findings.filter((f) => f.group !== GRANTED_GROUP),
+    [findings]
+  );
+  const grantedFindings = useMemo(
+    () => findings.filter((f) => f.group === GRANTED_GROUP),
+    [findings]
+  );
+  const passiveGroups = useMemo(
+    () => FINDING_GROUPS.filter((g) => g !== GRANTED_GROUP),
+    []
+  );
   const fieldCount = all.reduce((n, s) => n + s.rows.length, 0);
   const reported = all.reduce(
     (n, s) => n + s.rows.filter((r) => !isUnreported(r.v)).length,
@@ -468,7 +469,7 @@ export function ClientProbe({
                 </p>
               </div>
             ) : (
-              <Findings findings={findings} groups={FINDING_GROUPS} />
+              <Findings findings={passiveFindings} groups={passiveGroups} />
             )}
 
             <div className="mt-10 border-t border-rule pt-5">
@@ -517,65 +518,21 @@ export function ClientProbe({
             </ul>
 
             {Object.keys(outcomes).length > 0 && (
-              <div className="mt-6 space-y-4">
-                {GATED.filter((g) => outcomes[g.id]).map((g) => {
-                  const { status, section } = outcomes[g.id];
-                  const wanted = HIGHLIGHT[g.id] ?? [];
-                  const rows = (
-                    wanted.length
-                      ? section.rows.filter((r) => wanted.some((w) => r.k.includes(w)))
-                      : []
-                  );
-                  const shown = rows.length
-                    ? rows
-                    : section.rows
-                        .filter((r) => r.v !== undefined && !String(r.v).startsWith("error:"))
-                        .slice(0, 4);
-                  return (
-                    <Card key={g.id} tone="raised" className="p-4">
-                      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                        <h3 className="text-base font-semibold tracking-tight">{g.label}</h3>
-                        <span className="text-sm text-ink-faint">
-                          {status === "granted" ? "you approved this" : "you declined"}
-                        </span>
-                      </div>
-                      {status === "denied" ? (
-                        <p className="mt-1.5 max-w-[70ch] text-sm leading-relaxed text-ink-muted">
-                          Nothing was read. The browser refused, so this page learned
-                          only that you said no — which is itself a detail most sites record.
-                        </p>
-                      ) : (
-                        <>
-                          <p className="mt-1.5 max-w-[70ch] text-sm leading-relaxed text-ink-muted">
-                            One approval handed over {g.reveals}.
-                          </p>
-                          <Table cols={["40%", "auto"]} className="mt-3">
-                            <tbody>
-                              {shown.map((r) => (
-                                <tr key={r.k} className="align-top">
-                                  <Td className="text-sm text-ink-muted">{r.k}</Td>
-                                  <Td mono className="whitespace-pre-wrap [overflow-wrap:anywhere]">
-                                    {looksLikeJson(r.v) ? (
-                                      <Json value={typeof r.v === "string" ? JSON.parse(r.v) : r.v} dense />
-                                    ) : (
-                                      String(r.v)
-                                    )}
-                                  </Td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </Table>
-                        </>
-                      )}
-                      <a
-                        href={`#${section.id}`}
-                        className="mt-3 inline-block text-sm text-ink-muted no-underline hover:text-ink hover:underline"
-                      >
-                        Everything it returned →
-                      </a>
-                    </Card>
-                  );
-                })}
+              <div className="mt-8 border-t border-rule pt-6">
+                {grantedFindings.length > 0 && (
+                  <Findings findings={grantedFindings} groups={[GRANTED_GROUP]} />
+                )}
+                {GATED.filter((g) => outcomes[g.id]?.status === "denied").map((g) => (
+                  <div key={g.id} className="border-t border-rule py-5 first:border-t-0">
+                    <h4 className="text-lg font-medium leading-snug tracking-tight">
+                      You declined {g.label.toLowerCase()}.
+                    </h4>
+                    <p className="mt-2 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
+                      Nothing was read. This page learned only that you said no, which is
+                      itself a detail most sites record.
+                    </p>
+                  </div>
+                ))}
               </div>
             )}
           </section>

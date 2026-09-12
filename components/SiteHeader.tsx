@@ -22,9 +22,14 @@ export function SiteHeader({
   return (
     <header className="pt-12 pb-6">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3 border-b border-rule pb-3">
-        <h1 className="text-[1.9rem] font-semibold leading-none tracking-[-0.025em]">
+        {/* The wordmark identifies the site on both routes; the page's own
+            subject is the heading below it. */}
+        <Link
+          href="/"
+          className="text-[1.9rem] font-semibold leading-none tracking-[-0.025em] no-underline"
+        >
           Session Context
-        </h1>
+        </Link>
         <nav className="flex items-center gap-5 text-sm">
           {tabs.map((t) => (
             <Link
@@ -52,9 +57,9 @@ export function SiteHeader({
           )}
         </nav>
       </div>
-      <h2 className="mt-7 max-w-[46ch] text-xl font-medium leading-snug tracking-[-0.015em]">
+      <h1 className="mt-7 max-w-[46ch] text-xl font-medium leading-snug tracking-[-0.015em]">
         {title}
-      </h2>
+      </h1>
       <p className="mt-3 max-w-[68ch] text-base leading-[1.65] text-ink-muted">{lede}</p>
       {note && (
         <p className="mt-4 max-w-[64ch] border-t border-rule pt-3 text-sm leading-relaxed text-ink-faint">
