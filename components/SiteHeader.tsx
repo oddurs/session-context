@@ -26,8 +26,9 @@ export function SiteHeader({
             subject is the heading below it. */}
         <Link
           href="/"
-          className="text-[1.9rem] font-semibold leading-none tracking-[-0.025em] no-underline"
+          className="flex items-center gap-2.5 text-[1.9rem] font-semibold leading-none tracking-[-0.025em] no-underline"
         >
+          <Icon name="fingerprint" className="size-7 shrink-0" />
           Session Context
         </Link>
         <nav className="flex items-center gap-5 text-sm">
