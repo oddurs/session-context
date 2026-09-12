@@ -107,7 +107,7 @@ export async function privacySection(): Promise<Section> {
   return {
     id: "privacy",
     title: "Privacy Posture & Countermeasures",
-    note: "Whether this browser is running any of the common defences — and, revealingly, the fact that the defences themselves are detectable and therefore add entropy of their own.",
+    note: "Whether this browser is running any of the common defenses — and, revealingly, the fact that the defenses themselves are detectable and therefore add entropy of their own.",
     rows,
   };
 }
@@ -192,7 +192,7 @@ function canvasNoise(): string {
     x.fillText("noise?", 2, 2);
     return c.toDataURL();
   };
-  return draw() === draw() ? "stable (no randomisation)" : "differs between draws (randomised)";
+  return draw() === draw() ? "stable (no randomization)" : "differs between draws (randomized)";
 }
 
 function softwareRenderer(): string {
@@ -202,7 +202,7 @@ function softwareRenderer(): string {
     const r = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : gl?.getParameter(gl.RENDERER);
     if (!r) return "unknown";
     const soft = /swiftshader|llvmpipe|software|mesa offscreen|virgl/i.test(String(r));
-    return `${r} — ${soft ? "software rasteriser" : "hardware accelerated"}`;
+    return `${r} — ${soft ? "software rasterizer" : "hardware accelerated"}`;
   } catch (e) {
     return `error: ${(e as Error).message}`;
   }

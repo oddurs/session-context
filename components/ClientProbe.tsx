@@ -1,15 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Section } from "@/lib/types";
 import {
   collectAll,
-  liveInteractionRows,
+  liveCheapSections,
+  liveSection,
   probeDeviceLabels,
   probeGeolocation,
   probeLocalFonts,
   sortSections,
 } from "@/lib/collect";
+import { applyLive, watchLive } from "@/lib/live";
 import {
   probeClipboard,
   probeIdle,
@@ -26,7 +28,7 @@ import { ThirdParty } from "./ThirdParty";
 import { TrackerPayloads } from "./TrackerPayloads";
 import { TypingBiometrics } from "./TypingBiometrics";
 import { Icon } from "./Icon";
-import { Button, Checkbox, cx } from "./ui";
+import { Button, Card, Checkbox, Table, Td, cx } from "./ui";
 
 /** Raw-data category → the matching group on the methods page. */
 const METHODS_GROUP: Record<string, string> = {
@@ -38,19 +40,49 @@ const METHODS_GROUP: Record<string, string> = {
   granted: "gated",
 };
 
-type Gated = { id: string; label: string; warn?: string; run: () => Promise<Section> };
+type Gated = {
+  id: string;
+  label: string;
+  /** what this reveals, shown before you press it */
+  reveals: string;
+  warn?: string;
+  run: () => Promise<Section>;
+};
+
+/** The rows worth showing inline when a probe comes back. */
+const HIGHLIGHT: Record<string, string[]> = {
+  geolocation: ["latitude", "longitude", "accuracy", "timestamp"],
+  "local-fonts": ["fonts installed", "families"],
+  "device-labels": ["audio track label", "video track label"],
+  "screen-details": ["screens attached", "current screen label"],
+  clipboard: ["clipboard length", "clipboard contents"],
+  idle: ["user state", "screen state"],
+  sensors: ["orientation sample", "motion sample"],
+  schemes: [],
+};
+
+/** Did the browser actually hand anything over? */
+function outcomeOf(section: Section): "granted" | "denied" {
+  const usable = section.rows.some((r) => {
+    if (r.v === undefined || r.v === null || r.v === "") return false;
+    const v = String(r.v);
+    return !v.startsWith("error:") && v !== "denied" && v !== "prompt" && v !== "not permitted";
+  });
+  return usable ? "granted" : "denied";
+}
 
 const GATED: Gated[] = [
-  { id: "geolocation", label: "Precise location", run: probeGeolocation },
-  { id: "local-fonts", label: "Installed fonts", run: probeLocalFonts },
-  { id: "device-labels", label: "Camera + microphone", run: probeDeviceLabels },
-  { id: "screen-details", label: "All displays", run: probeScreenDetails },
-  { id: "clipboard", label: "Clipboard contents", run: probeClipboard },
-  { id: "idle", label: "Idle / lock state", run: probeIdle },
-  { id: "sensors", label: "Motion sensors", run: probeSensors },
+  { id: "geolocation", label: "Precise location", reveals: "where you are, to a few meters", run: probeGeolocation },
+  { id: "local-fonts", label: "Installed fonts", reveals: "every typeface on your system", run: probeLocalFonts },
+  { id: "device-labels", label: "Camera + microphone", reveals: "hardware names and permanent IDs", run: probeDeviceLabels },
+  { id: "screen-details", label: "All displays", reveals: "your whole desk setup", run: probeScreenDetails },
+  { id: "clipboard", label: "Clipboard contents", reveals: "whatever you last copied", run: probeClipboard },
+  { id: "idle", label: "Idle / lock state", reveals: "whether you are at the keyboard", run: probeIdle },
+  { id: "sensors", label: "Motion sensors", reveals: "readings unique to this physical device", run: probeSensors },
   {
     id: "schemes",
     label: "Installed desktop apps",
+    reveals: "which applications you have installed",
     warn:
       "This probe asks your browser to open the private URL of a dozen desktop applications (Slack, Zoom, Spotify, Discord and others) and watches which ones respond. Some of them may actually launch. Continue?",
     run: probeSchemes,
@@ -59,34 +91,55 @@ const GATED: Gated[] = [
 
 /**
  * Tracks the section currently under the top of the viewport, the way
- * documentation sidebars do: whichever heading you have most recently passed.
+ * documentation sidebars do.
+ *
+ * Offsets are measured once and cached: reading layout on every scroll frame
+ * forces a reflow and makes scrolling stutter.
  */
 function useScrollSpy(ids: string[]) {
   const [active, setActive] = useState("");
+  const offsets = useRef<{ id: string; top: number }[]>([]);
 
   useEffect(() => {
     let frame = 0;
-    const update = () => {
+
+    const measure = () => {
+      offsets.current = ids
+        .map((id) => {
+          const el = document.getElementById(id);
+          return el ? { id, top: el.getBoundingClientRect().top + window.scrollY } : null;
+        })
+        .filter((v): v is { id: string; top: number } => v !== null)
+        .sort((a, b) => a.top - b.top);
+      pick();
+    };
+
+    // Pure arithmetic on cached numbers: no layout is read here.
+    const pick = () => {
       frame = 0;
-      let current = ids[0] ?? "";
-      for (const id of ids) {
-        const el = document.getElementById(id);
-        if (!el) continue;
-        // 96px down from the top: just below the sticky bar.
-        if (el.getBoundingClientRect().top <= 96) current = id;
+      const y = window.scrollY + 96;
+      let current = offsets.current[0]?.id ?? "";
+      for (const entry of offsets.current) {
+        if (entry.top <= y) current = entry.id;
         else break;
       }
-      setActive(current);
+      setActive((prev) => (prev === current ? prev : current));
     };
+
     const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(update);
+      if (!frame) frame = requestAnimationFrame(pick);
     };
-    update();
+
+    measure();
+    // Content keeps arriving as collection finishes, so re-measure when idle.
+    const remeasure = setTimeout(measure, 1500);
+
     addEventListener("scroll", onScroll, { passive: true });
-    addEventListener("resize", onScroll);
+    addEventListener("resize", measure);
     return () => {
       removeEventListener("scroll", onScroll);
-      removeEventListener("resize", onScroll);
+      removeEventListener("resize", measure);
+      clearTimeout(remeasure);
       if (frame) cancelAnimationFrame(frame);
     };
   }, [ids]);
@@ -105,10 +158,13 @@ export function ClientProbe({
   const [extra, setExtra] = useState<Section[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [outcomes, setOutcomes] = useState<
+    Record<string, { status: "granted" | "denied"; section: Section }>
+  >({});
   const [collectedAt, setCollectedAt] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const [hideEmpty, setHideEmpty] = useState(false);
-  const [tick, setTick] = useState(0);
+  const [live, setLive] = useState<Section[]>([]);
 
   const collect = useCallback(async () => {
     setBusy("collect");
@@ -133,10 +189,26 @@ export function ClientProbe({
     void collect();
   }, [collect]);
 
-  // The interaction counters keep running, so re-read them on a slow interval.
+  // Anything that can change while you sit here does: cheap values are re-read
+  // on a timer, the rest when the browser reports the change.
   useEffect(() => {
-    const i = setInterval(() => setTick((t) => t + 1), 1000);
-    return () => clearInterval(i);
+    const merge = (next: Section[]) =>
+      setLive((prev) => {
+        const byId = new Map(prev.map((s) => [s.id, s]));
+        for (const s of next) byId.set(s.id, s);
+        return [...byId.values()];
+      });
+
+    const timer = setInterval(() => merge(liveCheapSections()), 1000);
+    const stop = watchLive((kind) => {
+      if (kind === "cheap") merge(liveCheapSections());
+      else void liveSection(kind).then(merge);
+    });
+
+    return () => {
+      clearInterval(timer);
+      stop();
+    };
   }, []);
 
   const addSection = useCallback((s: Section) => {
@@ -147,7 +219,9 @@ export function ClientProbe({
     if (g.warn && !window.confirm(g.warn)) return;
     setBusy(g.id);
     try {
-      addSection(await g.run());
+      const section = await g.run();
+      addSection(section);
+      setOutcomes((prev) => ({ ...prev, [g.id]: { status: outcomeOf(section), section } }));
     } finally {
       setBusy(null);
     }
@@ -158,14 +232,9 @@ export function ClientProbe({
     [serverSections, sections, extra]
   );
 
-  // Only the interaction section changes on each tick. Every other section
+  // Live sections replace their collected counterparts; every other section
   // keeps its object identity, so the memoised tables do not re-render.
-  const all = useMemo(() => {
-    void tick;
-    return base.map((s) =>
-      s.id === "interaction" ? { ...s, rows: liveInteractionRows() } : s
-    );
-  }, [base, tick]);
+  const all = useMemo(() => applyLive(base, live), [base, live]);
 
   const findings = useMemo(() => deriveFindings(all), [all]);
   const fieldCount = all.reduce((n, s) => n + s.rows.length, 0);
@@ -257,7 +326,7 @@ export function ClientProbe({
       </dl>
 
       {/* sticky bar: where you are, and what you can do about it */}
-      <div className="sticky top-0 z-40 -mx-4 mb-10 border-b border-rule bg-paper/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6">
+      <div className="sticky top-0 z-40 -mx-4 mb-10 border-b border-rule bg-paper px-4 py-2 sm:-mx-6 sm:px-6">
         <div className="mx-auto flex max-w-page items-center gap-4">
           <span className="truncate text-sm text-ink-muted">
             {activeId === "plain" || !activeId
@@ -398,14 +467,89 @@ export function ClientProbe({
               are the capabilities that do ask first — press one to see what a
               single approval hands over.
             </p>
-            <div className="flex flex-wrap gap-2">
-              {GATED.map((g) => (
-                <Button key={g.id} onClick={() => void runGated(g)} disabled={busy !== null}>
-                  {busy === g.id ? "waiting…" : g.label}
-                  {g.warn && <span className="text-xs text-ink-faint">intrusive</span>}
-                </Button>
-              ))}
-            </div>
+            <ul className="flex flex-wrap gap-2">
+              {GATED.map((g) => {
+                const outcome = outcomes[g.id];
+                return (
+                  <li key={g.id}>
+                    <Button
+                      onClick={() => void runGated(g)}
+                      disabled={busy !== null}
+                      title={`Reveals ${g.reveals}`}
+                      className={cx(outcome?.status === "granted" && "border-ink")}
+                    >
+                      {outcome?.status === "granted" && <Icon name="check" className="size-3.5" />}
+                      {busy === g.id ? "waiting for you…" : g.label}
+                      {!outcome && g.warn && (
+                        <span className="text-xs text-ink-faint">intrusive</span>
+                      )}
+                      {outcome?.status === "denied" && (
+                        <span className="text-xs text-ink-faint">declined</span>
+                      )}
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {Object.keys(outcomes).length > 0 && (
+              <div className="mt-6 space-y-4">
+                {GATED.filter((g) => outcomes[g.id]).map((g) => {
+                  const { status, section } = outcomes[g.id];
+                  const wanted = HIGHLIGHT[g.id] ?? [];
+                  const rows = (
+                    wanted.length
+                      ? section.rows.filter((r) => wanted.some((w) => r.k.includes(w)))
+                      : []
+                  );
+                  const shown = rows.length
+                    ? rows
+                    : section.rows
+                        .filter((r) => r.v !== undefined && !String(r.v).startsWith("error:"))
+                        .slice(0, 4);
+                  return (
+                    <Card key={g.id} tone="raised" className="p-4">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                        <h3 className="text-base font-semibold tracking-tight">{g.label}</h3>
+                        <span className="text-sm text-ink-faint">
+                          {status === "granted" ? "you approved this" : "you declined"}
+                        </span>
+                      </div>
+                      {status === "denied" ? (
+                        <p className="mt-1.5 max-w-[70ch] text-sm leading-relaxed text-ink-muted">
+                          Nothing was read. The browser refused, so this page learned
+                          only that you said no — which is itself a detail most sites record.
+                        </p>
+                      ) : (
+                        <>
+                          <p className="mt-1.5 max-w-[70ch] text-sm leading-relaxed text-ink-muted">
+                            One approval handed over {g.reveals}.
+                          </p>
+                          <Table cols={["40%", "auto"]} className="mt-3">
+                            <tbody>
+                              {shown.map((r) => (
+                                <tr key={r.k} className="align-top">
+                                  <Td className="text-sm text-ink-muted">{r.k}</Td>
+                                  <Td mono className="whitespace-pre-wrap">
+                                    {String(r.v)}
+                                  </Td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </Table>
+                        </>
+                      )}
+                      <a
+                        href={`#${section.id}`}
+                        className="mt-3 inline-block text-sm text-ink-muted no-underline hover:text-ink hover:underline"
+                      >
+                        Everything it returned →
+                      </a>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           {/* raw data */}
@@ -415,7 +559,7 @@ export function ClientProbe({
               <p className="mt-1 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
                 The findings above are derived from these {all.length} tables.
                 Field names carry a definition where one helps; anything your
-                browser withheld is greyed out.
+                browser withheld is grayed out.
               </p>
               <div className="mt-3">
                 <Checkbox checked={hideEmpty} onChange={setHideEmpty}>

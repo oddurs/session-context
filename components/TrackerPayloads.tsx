@@ -13,7 +13,7 @@ import { Icon } from "./Icon";
  */
 export function TrackerPayloads({ sections }: { sections: Section[] }) {
   // Payloads embed timestamps and request ids, so they are built in the browser
-  // only — rendering them during SSR would desynchronise hydration.
+  // only — rendering them during SSR would desynchronize hydration.
   const mounted = useClientValue(() => true, false);
   const payloads = useMemo(
     () => (mounted ? buildTrackerPayloads(sections) : []),

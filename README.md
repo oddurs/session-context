@@ -15,9 +15,9 @@ Two views, plus a methods reference:
   Apple M5 Pro chip", "There is an identifier hidden in your browser cache"),
   each expandable to the fields it was derived from.
 - **Everything** — ~40 tables, ~800 fields, grouped into six categories with a
-  glossary tooltip on every jargon term and anything unreported greyed out.
+  glossary tooltip on every jargon term and anything unreported grayed out.
 - **Methods** — what each of the 36 techniques exposes, how it works, and where
-  browser defences currently stand.
+  browser defenses currently stand.
 
 ## Techniques
 

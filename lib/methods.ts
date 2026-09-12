@@ -37,7 +37,7 @@ export const METHOD_GROUPS: MethodGroup[] = [
       },
       {
         name: "Client hints",
-        reveals: "Processor architecture and bitness, exact browser build to the patch number, operating system version, device model, colour-scheme preference, viewport size.",
+        reveals: "Processor architecture and bitness, exact browser build to the patch number, operating system version, device model, color-scheme preference, viewport size.",
         how: "The server replies with an `Accept-CH` header listing what it wants. The browser then attaches those values to every subsequent request. `Critical-CH` makes it retry the very first request so nothing is missed.",
         status: "Actively expanding in Chromium. Presented as a privacy improvement over the user-agent string, because the values are requested rather than broadcast — but a site that asks receives more precise data than the old string ever carried.",
         section: "client-hints",
@@ -58,7 +58,7 @@ export const METHOD_GROUPS: MethodGroup[] = [
       },
       {
         name: "CSS-only fingerprinting",
-        reveals: "Colour scheme, pixel density, window size, input device, accessibility settings, colour gamut, and which rendering engine you use — plus whether JavaScript is disabled.",
+        reveals: "Color scheme, pixel density, window size, input device, accessibility settings, color gamut, and which rendering engine you use — plus whether JavaScript is disabled.",
         how: "A stylesheet declares one rule per condition, each loading a different background image. The browser only fetches an image when its rule matches, so the pattern of requests tells the server which conditions were true. A `@media (scripting: none)` rule fires precisely when scripts are off.",
         status: "No mitigation. Blocking or disabling JavaScript does not affect it, which makes it the standard counter-example to script blocking as a privacy measure.",
         section: "css-noscript",
@@ -70,13 +70,13 @@ export const METHOD_GROUPS: MethodGroup[] = [
     title: "Fingerprinting — identity without storage",
     icon: "fingerprint",
     intro:
-      "These techniques recognise a returning visitor with nothing saved on their machine. They survive clearing cookies, private windows, and in some cases a change of browser.",
+      "These techniques recognize a returning visitor with nothing saved on their machine. They survive clearing cookies, private windows, and in some cases a change of browser.",
     methods: [
       {
         name: "Canvas rendering",
-        reveals: "A stable hash unique to your combination of graphics driver, fonts and rasteriser.",
-        how: "The page draws identical text and shapes off-screen and reads the pixels back. Anti-aliasing and font rasterisation differ minutely between machines, and the difference is consistent for any one of them.",
-        status: "Firefox and Tor Browser randomise or prompt; Safari returns a value that changes per session. Chrome does not mitigate by default.",
+        reveals: "A stable hash unique to your combination of graphics driver, fonts and rasterizer.",
+        how: "The page draws identical text and shapes off-screen and reads the pixels back. Anti-aliasing and font rasterization differ minutely between machines, and the difference is consistent for any one of them.",
+        status: "Firefox and Tor Browser randomize or prompt; Safari returns a value that changes per session. Chrome does not mitigate by default.",
         section: "fingerprints",
       },
       {
@@ -88,9 +88,9 @@ export const METHOD_GROUPS: MethodGroup[] = [
       },
       {
         name: "Audio processing",
-        reveals: "A hash reflecting the floating-point behaviour of your audio stack.",
+        reveals: "A hash reflecting the floating-point behavior of your audio stack.",
         how: "An oscillator is rendered through a compressor in an offline audio context — never audible — and the resulting samples are summed.",
-        status: "Randomised in Firefox's resist-fingerprinting mode and in Tor Browser. Otherwise unmitigated.",
+        status: "Randomized in Firefox's resist-fingerprinting mode and in Tor Browser. Otherwise unmitigated.",
         section: "fingerprints",
       },
       {
@@ -122,7 +122,7 @@ export const METHOD_GROUPS: MethodGroup[] = [
         section: "worker",
       },
       {
-        name: "Behavioural biometrics",
+        name: "Behavioral biometrics",
         reveals: "How you type and move a pointer — usable to tell whether the same human is present.",
         how: "Key hold times, gaps between keystrokes, pointer speed, acceleration and path curvature are collected from ordinary events and compared against a stored profile.",
         status: "In production use for fraud scoring and continuous authentication. No permission prompt exists for it.",
@@ -183,7 +183,7 @@ export const METHOD_GROUPS: MethodGroup[] = [
     methods: [
       {
         name: "Third-party embedding",
-        reveals: "Whether an embedded party can recognise you from elsewhere, and whether your browser stops it.",
+        reveals: "Whether an embedded party can recognize you from elsewhere, and whether your browser stops it.",
         how: "This page embeds a frame from a genuinely different origin — the same server reached by its other hostname — which then sets and reads its own identifier from inside your visit, exactly as an advertising tag does. No outside company is involved.",
         status: "Third-party cookies are blocked by default in Safari and Firefox and being phased down in Chrome; remaining storage is partitioned per embedding site. This is the most substantial privacy change of the last decade.",
         section: "third-party",
@@ -220,8 +220,8 @@ export const METHOD_GROUPS: MethodGroup[] = [
       },
       {
         name: "Screen, theme and accessibility preferences",
-        reveals: "Display geometry, density, refresh rate, OS accent colour, and whether you use reduced motion, increased contrast or forced colours.",
-        how: "Media queries and resolved CSS system colours, all readable synchronously.",
+        reveals: "Display geometry, density, refresh rate, OS accent color, and whether you use reduced motion, increased contrast or forced colors.",
+        how: "Media queries and resolved CSS system colors, all readable synchronously.",
         status: "Disclosed by design so pages can adapt. Accessibility settings are effectively health-adjacent data shared with every site, with no way to receive the accommodation while withholding the signal.",
         section: "preferences",
       },
@@ -271,7 +271,7 @@ export const METHOD_GROUPS: MethodGroup[] = [
     methods: [
       {
         name: "Precise location",
-        reveals: "Position to within a few metres: a building, not a city.",
+        reveals: "Position to within a few meters: a building, not a city.",
         how: "The operating system combines satellite, nearby wi-fi networks and cell towers.",
         status: "Properly gated. Once granted, a site may keep asking on every return visit.",
         section: "geolocation",
@@ -337,7 +337,7 @@ export const DECLINED: { name: string; why: string }[] = [
   },
   {
     name: "History sniffing side channels",
-    why: "Timing and paint-based attacks that recover which sites you have visited are attacks on the browser itself, and current techniques are live vulnerabilities rather than settled behaviour.",
+    why: "Timing and paint-based attacks that recover which sites you have visited are attacks on the browser itself, and current techniques are live vulnerabilities rather than settled behavior.",
   },
   {
     name: "Live commercial trackers",

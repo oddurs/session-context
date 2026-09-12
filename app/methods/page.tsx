@@ -34,7 +34,7 @@ export default function MethodsPage() {
       <SiteHeader
         current="methods"
         title="How each of these works"
-        lede={`The ${total} techniques used on this site, what each one exposes, the mechanism behind it, and where browser defences currently stand. Every one is implemented and running — nothing here is hypothetical.`}
+        lede={`The ${total} techniques used on this site, what each one exposes, the mechanism behind it, and where browser defenses currently stand. Every one is implemented and running — nothing here is hypothetical.`}
         note="Written to be read alongside the data page: each entry links to the table it produces."
       />
 
@@ -80,7 +80,7 @@ export default function MethodsPage() {
                     <dd className="mt-0.5 text-ink-muted"><Text>{m.how}</Text></dd>
                   </div>
                   <div>
-                    <dt className="label">Where defences stand</dt>
+                    <dt className="label">Where defenses stand</dt>
                     <dd className="mt-0.5 text-ink-muted"><Text>{m.status}</Text></dd>
                   </div>
                 </dl>

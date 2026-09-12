@@ -4,6 +4,7 @@ import { memo, useState } from "react";
 import type { Row, Section } from "@/lib/types";
 import { lookupTerm } from "@/lib/glossary";
 import { Icon } from "./Icon";
+import { LIVE_SECTIONS } from "@/lib/live";
 import { Table, Td, Th, Tooltip, cx } from "./ui";
 
 const LONG = 240;
@@ -27,7 +28,7 @@ function Value({ v }: { v: unknown }) {
   if (v === null) return <span className="text-ink-faint italic">null — not reported</span>;
   if (v === "") return <span className="text-ink-faint italic">empty</span>;
   if (typeof v === "boolean")
-    return <span className={v ? "font-semibold" : "text-ink-muted"}>{v ? "yes" : "no"}</span>;
+    return <span className={v ? "text-ink" : "text-ink-muted"}>{v ? "yes" : "no"}</span>;
 
   const text = typeof v === "object" ? JSON.stringify(v, null, 2) : String(v);
   if (isUnreported(text)) return <span className="text-ink-faint italic">{text}</span>;
@@ -119,7 +120,17 @@ function SectionBlockBase({ section, hideEmpty }: { section: Section; hideEmpty?
   return (
     <section id={section.id} className="mb-10">
       <div className="flex items-baseline justify-between gap-4">
-        <h5 className="text-base font-semibold tracking-tight">{section.title}</h5>
+        <h5 className="flex items-baseline gap-2 text-base font-semibold tracking-tight">
+          {section.title}
+          {LIVE_SECTIONS.has(section.id) && (
+            <span
+              className="text-xs font-normal text-ink-faint"
+              title="These values update as they change"
+            >
+              live
+            </span>
+          )}
+        </h5>
         <span className="shrink-0 text-xs text-ink-faint tabular">
           {section.rows.length - missing} reported
           {missing > 0 && ` · ${missing} not`}

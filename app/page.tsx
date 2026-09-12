@@ -85,7 +85,7 @@ async function serverSections(): Promise<Section[]> {
     {
       id: "client-hints",
       title: "Client Hints Received",
-      note: "This server sends Accept-CH and Critical-CH asking for high-entropy hints — processor architecture, exact browser build, device model, colour-scheme preference. The browser then volunteers them on every subsequent request, no script required.",
+      note: "This server sends Accept-CH and Critical-CH asking for high-entropy hints — processor architecture, exact browser build, device model, color-scheme preference. The browser then volunteers them on every subsequent request, no script required.",
       rows: hintRows,
     },
     {

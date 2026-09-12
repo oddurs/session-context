@@ -96,7 +96,7 @@ export function EmbedClient() {
       {report ? (
         <>
           third-party context · origin {report.origin} · id {report.id}{" "}
-          {report.isNew ? "(new here)" : "(recognised)"}
+          {report.isNew ? "(new here)" : "(recognized)"}
         </>
       ) : (
         "…"

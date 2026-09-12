@@ -518,7 +518,7 @@ async function fingerprintSection(): Promise<Section> {
   return {
     id: "fingerprints",
     title: "Rendering Fingerprints",
-    note: "Digests of how this machine rasterises graphics and processes audio. Identical hardware + driver + browser builds produce identical hashes; small differences change them completely.",
+    note: "Digests of how this machine rasterizes graphics and processes audio. Identical hardware + driver + browser builds produce identical hashes; small differences change them completely.",
     rows: [
       { k: "canvas 2D hash", v: probe(() => canvasFingerprint()) },
       { k: "canvas 2D data length", v: probe(() => canvasDataURL().length) },
@@ -1217,6 +1217,34 @@ export async function collectAll(
 
   const fp = await fingerprintSections();
   return sortSections([...immediate, ...quick, ...heavy, ...fp]);
+}
+
+/**
+ * Sections cheap enough to re-read on a timer: plain property and media-query
+ * lookups, no async work.
+ */
+export function liveCheapSections(): Section[] {
+  return [
+    screenSection(),
+    preferencesSection(),
+    documentSection(),
+    localeSection(),
+    interactionSection(),
+  ];
+}
+
+/** Sections re-read when the browser reports the underlying thing changed. */
+export async function liveSection(kind: "network" | "devices" | "permissions" | "hardware") {
+  switch (kind) {
+    case "network":
+      return [await networkSection()];
+    case "devices":
+      return [await devicesSection()];
+    case "permissions":
+      return [await permissionsSection()];
+    case "hardware":
+      return [await hardwareSection()];
+  }
 }
 
 /** Attach category + subgroup from the taxonomy and sort into reading order. */

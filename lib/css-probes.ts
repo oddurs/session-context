@@ -16,13 +16,13 @@ export const CSS_PROBES: CssProbe[] = [
   { id: "reduced-transparency", label: "Reduced transparency requested", rule: "@media (prefers-reduced-transparency: reduce)" },
   { id: "more-contrast", label: "Higher contrast requested", rule: "@media (prefers-contrast: more)" },
   { id: "less-contrast", label: "Lower contrast requested", rule: "@media (prefers-contrast: less)" },
-  { id: "forced-colors", label: "Forced colours active (high-contrast mode)", rule: "@media (forced-colors: active)" },
-  { id: "inverted", label: "Colours inverted", rule: "@media (inverted-colors: inverted)" },
+  { id: "forced-colors", label: "Forced colors active (high-contrast mode)", rule: "@media (forced-colors: active)" },
+  { id: "inverted", label: "Colors inverted", rule: "@media (inverted-colors: inverted)" },
   { id: "reduced-data", label: "Data saving requested", rule: "@media (prefers-reduced-data: reduce)" },
 
   // The display
-  { id: "gamut-p3", label: "Wide colour display (P3)", rule: "@media (color-gamut: p3)" },
-  { id: "gamut-rec2020", label: "Very wide colour display (Rec. 2020)", rule: "@media (color-gamut: rec2020)" },
+  { id: "gamut-p3", label: "Wide color display (P3)", rule: "@media (color-gamut: p3)" },
+  { id: "gamut-rec2020", label: "Very wide color display (Rec. 2020)", rule: "@media (color-gamut: rec2020)" },
   { id: "hdr", label: "HDR-capable display", rule: "@media (dynamic-range: high)" },
   { id: "monochrome", label: "Monochrome display", rule: "@media (monochrome)" },
   { id: "dpr1", label: "Standard-density screen (1×)", rule: "@media (resolution: 1dppx)" },
@@ -53,7 +53,7 @@ export const CSS_PROBES: CssProbe[] = [
   { id: "scripting-enabled", label: "JavaScript is enabled", rule: "@media (scripting: enabled)" },
 
   // Engine tells: which browser, from CSS support alone
-  { id: "sup-oklch", label: "Supports oklch() colours", rule: "@supports (color: oklch(0.5 0.1 200))" },
+  { id: "sup-oklch", label: "Supports oklch() colors", rule: "@supports (color: oklch(0.5 0.1 200))" },
   { id: "sup-has", label: "Supports :has()", rule: "@supports selector(:has(a))" },
   { id: "sup-nesting", label: "Supports CSS nesting", rule: "@supports selector(&)" },
   { id: "sup-backdrop", label: "Supports backdrop-filter", rule: "@supports (backdrop-filter: blur(1px))" },

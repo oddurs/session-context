@@ -38,7 +38,7 @@ third-party embedding demonstration frames whichever hostname you are not on.
 
 Everything client-side flows through `Section[]` (`lib/types.ts`): a section has
 an id, title, note and `Row[]` of `{ k, v, n? }`. `v === undefined` renders as
-"not reported" and greys the row.
+"not reported" and grays the row.
 
 ## Conventions
 
@@ -78,6 +78,6 @@ npm run probe -- <url> <wait-ms>   # exits non-zero on any console error
 
 Watch for hydration mismatches specifically. Three have been introduced and
 fixed here: branching on `location` during render, `Date.now()` inside rendered
-payloads, and a StrictMode double-effect that cancelled its own timeout. Use
+payloads, and a StrictMode double-effect that canceled its own timeout. Use
 `useClientValue` (`lib/use-client-value.ts`) for browser-only values rather than
 `useState` + effect.

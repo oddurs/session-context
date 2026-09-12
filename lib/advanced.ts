@@ -433,7 +433,7 @@ export async function systemUISection(): Promise<Section> {
   return {
     id: "system-ui",
     title: "System Theme & UI Metrics",
-    note: "Resolved CSS system colours expose the OS theme — including the user's chosen accent colour. Scrollbar width and refresh rate distinguish platforms and displays.",
+    note: "Resolved CSS system colors expose the OS theme — including the user's chosen accent color. Scrollbar width and refresh rate distinguish platforms and displays.",
     rows: [
       ...colors,
       { k: "scrollbar width", v: `${scrollbar} px`, n: "0 = overlay scrollbars (macOS/mobile)" },
@@ -490,7 +490,7 @@ export async function benchmarkSection(): Promise<Section> {
   let acc = 0;
   for (let i = 1; i <= 3_000_000; i++) acc += Math.sqrt(i) * Math.sin(i) + Math.log(i);
   const mathMs = performance.now() - t0;
-  // Publish the accumulator so the loop cannot be optimised away as dead code.
+  // Publish the accumulator so the loop cannot be optimized away as dead code.
   (globalThis as any).__dmBenchAcc = acc;
 
   const t1 = performance.now();
@@ -587,7 +587,7 @@ export async function probeScreenDetails(): Promise<Section> {
     );
     det.screens.forEach((s: any, i: number) => {
       rows.push({
-        k: `screen[${i}] ${s.label || "(unlabelled)"}`,
+        k: `screen[${i}] ${s.label || "(unlabeled)"}`,
         v: `${s.width}×${s.height} @ (${s.left},${s.top}) · avail ${s.availWidth}×${s.availHeight} · ${s.colorDepth}-bit · ${s.devicePixelRatio}x${s.isPrimary ? " · primary" : ""}${s.isInternal ? " · internal" : ""}`,
       });
     });
@@ -597,7 +597,7 @@ export async function probeScreenDetails(): Promise<Section> {
   return {
     id: "screen-details",
     title: "Multi-Screen Details (granted)",
-    note: "The Window Management permission reveals every attached display: resolution, position in the virtual desktop, colour depth and manufacturer label.",
+    note: "The Window Management permission reveals every attached display: resolution, position in the virtual desktop, color depth and manufacturer label.",
     rows,
   };
 }

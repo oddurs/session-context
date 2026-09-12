@@ -21,7 +21,7 @@ function otherOrigin(): string | null {
 
 export function ThirdParty({ onResult }: { onResult: (s: Section) => void }) {
   // Resolved on the client only: the server has no `location`, and branching on
-  // it during render would desynchronise hydration.
+  // it during render would desynchronize hydration.
   const origin = useClientValue<string | null | undefined>(otherOrigin, undefined);
   const reported = useRef(false);
 
@@ -52,7 +52,7 @@ export function ThirdParty({ onResult }: { onResult: (s: Section) => void }) {
           { k: "embedded frame's origin", v: r.origin, n: "a different site, by the browser's rules" },
           { k: "frame is cross-origin", v: r.origin !== location.origin },
           { k: "identifier the frame holds", v: r.id },
-          { k: "frame recognised this browser", v: !r.isNew, n: "false means its storage was partitioned or blocked" },
+          { k: "frame recognized this browser", v: !r.isNew, n: "false means its storage was partitioned or blocked" },
           { k: "third-party cookie written", v: r.cookieWritten, n: "blocked by default in many browsers" },
           { k: "third-party cookie read back", v: r.cookieRead ?? "none" },
           { k: "third-party localStorage written", v: r.storageWritten },

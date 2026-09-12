@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Section } from "@/lib/types";
 import { mouseDynamics } from "@/lib/collect";
-import { Badge, Button, Card, Table, Td } from "./ui";
+import { useClientValue } from "@/lib/use-client-value";
+import { Badge, Button, Card, Table, Td, cx } from "./ui";
 
 const PHRASE = "the quick brown fox jumps over the lazy dog";
 const PROFILE_KEY = "dm_typing_profile";
@@ -17,42 +18,57 @@ const sd = (a: number[]) => {
 };
 
 /**
- * Keystroke dynamics: how long you hold each key (dwell) and how long you take
- * between keys (flight). The pattern is stable per person and is used
- * commercially for continuous authentication and fraud scoring.
+ * Keystroke dynamics: how long each key is held (dwell) and how long the gaps
+ * between keys last (flight). The pattern is stable per person and is used
+ * commercially for fraud scoring and continuous authentication.
  */
 export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void }) {
-  const [text, setText] = useState("");
-  const [count, setCount] = useState(0);
+  const [typed, setTyped] = useState("");
+  const [focused, setFocused] = useState(false);
   const [result, setResult] = useState<Section | null>(null);
-  const [status, setStatus] = useState<"idle" | "typing" | "done">("idle");
+  const [stats, setStats] = useState({ accuracy: 100, wpm: 0, keys: 0 });
+
+  const input = useRef<HTMLInputElement>(null);
   const down = useRef<Map<string, number>>(new Map());
   const dwell = useRef<number[]>([]);
   const flight = useRef<number[]>([]);
   const lastUp = useRef<number | null>(null);
   const started = useRef<number | null>(null);
 
-  const reset = () => {
-    setText("");
-    setStatus("idle");
+  const progress = useMemo(() => Math.min(typed.length / PHRASE.length, 1), [typed]);
+
+  /** Words per minute so far, measured from the first keystroke. */
+  const minutesElapsed = () =>
+    started.current ? (performance.now() - started.current) / 60000 : 0;
+
+  const reset = (keepProfile = true) => {
+    setTyped("");
+    setResult(null);
     down.current.clear();
     dwell.current = [];
     flight.current = [];
     lastUp.current = null;
     started.current = null;
-    setCount(0);
-    setResult(null);
+    setStats({ accuracy: 100, wpm: 0, keys: 0 });
+    if (!keepProfile) {
+      try {
+        localStorage.removeItem(PROFILE_KEY);
+      } catch {
+        /* storage blocked */
+      }
+    }
+    input.current?.focus();
   };
 
-  const finish = () => {
+  const analyze = () => {
+    if (dwell.current.length < 8) return;
+    const elapsedMin = minutesElapsed();
     const profile: Profile = {
       dwell: mean(dwell.current),
       flight: mean(flight.current),
       sdDwell: sd(dwell.current),
       sdFlight: sd(flight.current),
-      wpm: started.current
-        ? (text.trim().split(/\s+/).length / ((performance.now() - started.current) / 60000))
-        : 0,
+      wpm: elapsedMin > 0 ? typed.length / 5 / elapsedMin : 0,
     };
 
     let stored: Profile | null = null;
@@ -63,7 +79,7 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
       /* storage blocked */
     }
 
-    // Normalised distance between this sample and the stored profile.
+    // Normalized distance between this sample and the stored profile.
     const distance = stored
       ? Math.sqrt(
           ((profile.dwell - stored.dwell) / Math.max(stored.dwell, 1)) ** 2 +
@@ -83,26 +99,27 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
       id: "typing",
       title: "Keystroke & Movement Biometrics",
       note:
-        "Nothing here identifies what you typed — only how. Hold times and gaps between keys are consistent enough per person that banks and fraud systems use them to tell whether the same human is at the keyboard, and they are readable by any page without a permission prompt.",
+        "Nothing here records what you typed, only how. Hold times and gaps between keys are consistent enough per person that banks and fraud systems use them to judge whether the same human is at the keyboard, and any page can read them without a prompt.",
       rows: [
         { k: "characters measured", v: dwell.current.length },
+        { k: "accuracy", v: `${stats.accuracy}%` },
         { k: "mean key hold (dwell)", v: `${profile.dwell.toFixed(1)} ms` },
         { k: "hold consistency (σ)", v: `${profile.sdDwell.toFixed(1)} ms`, n: "lower is more machine-like" },
         { k: "mean gap between keys (flight)", v: `${profile.flight.toFixed(1)} ms` },
         { k: "gap consistency (σ)", v: `${profile.sdFlight.toFixed(1)} ms` },
         { k: "typing speed", v: `${profile.wpm.toFixed(0)} words per minute` },
-        { k: "stored profile existed", v: !!stored, n: "from an earlier attempt on this browser" },
+        { k: "stored profile existed", v: !!stored, n: "from an earlier attempt in this browser" },
         { k: "distance from stored profile", v: distance != null ? distance.toFixed(3) : undefined },
         {
           k: "verdict",
           v:
             distance == null
-              ? "profile saved — type it again to be matched against this one"
+              ? "Profile saved. Type the sentence again and it will be matched against this one."
               : distance < 0.35
-                ? "same typist, with high confidence"
+                ? "Same typist, with high confidence."
                 : distance < 0.7
-                  ? "plausibly the same typist"
-                  : "different rhythm from the stored profile",
+                  ? "Plausibly the same typist."
+                  : "A different rhythm from the stored profile.",
         },
         { k: "mouse samples held", v: md?.samples },
         { k: "mean pointer speed", v: md ? `${(md.meanSpeed * 1000).toFixed(0)} px/s` : undefined },
@@ -111,71 +128,139 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
     };
     onResult(section);
     setResult(section);
-    setStatus("done");
   };
 
+  const hasProfile = useClientValue(() => {
+    try {
+      return !!localStorage.getItem(PROFILE_KEY);
+    } catch {
+      return false;
+    }
+  }, false);
+
   return (
-    <Card className="p-4">
+    <Card className="p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h4 className="text-base font-semibold tracking-tight">Type one sentence</h4>
         <Badge>no permission needed</Badge>
       </div>
-      <p className="mt-2 max-w-[76ch] text-sm leading-relaxed text-ink-muted">
-        Type the phrase below. The page measures the rhythm, not the words, and
-        saves the pattern — type it a second time and it will tell you whether
-        it thinks the same person is at the keyboard.
+      <p className="mt-2 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
+        {hasProfile && !result
+          ? "A rhythm from an earlier attempt is stored in this browser. Type the sentence again and it will be compared against it."
+          : "Type the sentence below. This page measures the rhythm, not the words, then saves the pattern — type it a second time and it will say whether the same person is at the keyboard."}
       </p>
-      <p className="mt-3 text-base text-ink select-none">“{PHRASE}”</p>
-      <input
-        value={text}
-        spellCheck={false}
-        autoComplete="off"
-        placeholder="type it here…"
-        onKeyDown={(e) => {
-          if (started.current === null) {
-            started.current = performance.now();
-            setStatus("typing");
-          }
-          if (!down.current.has(e.key)) down.current.set(e.key, performance.now());
-          if (lastUp.current !== null) flight.current.push(performance.now() - lastUp.current);
-        }}
-        onKeyUp={(e) => {
-          const t = down.current.get(e.key);
-          if (t !== undefined) {
-            dwell.current.push(performance.now() - t);
-            down.current.delete(e.key);
-            setCount(dwell.current.length);
-          }
-          lastUp.current = performance.now();
-        }}
-        onChange={(e) => setText(e.target.value)}
-        className="mt-2 w-full rounded-sm border border-rule-strong bg-surface px-3 py-2 text-base
-                   outline-none placeholder:text-ink-faint focus:border-ink"
-      />
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button onClick={finish} disabled={count < 8}>
-          Analyse my typing
-        </Button>
-        <Button variant="quiet" onClick={reset}>
-          Start over
-        </Button>
-        {status !== "done" && (
-          <span className="text-sm text-ink-faint tabular">
-            {count} keystrokes measured
-          </span>
+
+      {/* the phrase is the field: clicking it focuses a transparent input */}
+      <div
+        onClick={() => input.current?.focus()}
+        className={cx(
+          "mt-4 cursor-text border p-4 text-lg leading-relaxed transition-colors",
+          focused ? "border-ink" : "border-rule-strong"
         )}
+      >
+        {[...PHRASE].map((char, i) => {
+          const typedChar = typed[i];
+          const state =
+            typedChar === undefined ? "pending" : typedChar === char ? "correct" : "wrong";
+          return (
+            <span
+              key={i}
+              className={cx(
+                "relative",
+                state === "pending" && "text-ink-faint",
+                state === "correct" && "text-ink",
+                state === "wrong" && "text-ink underline decoration-2 underline-offset-4",
+                focused && i === typed.length && "border-l border-ink"
+              )}
+            >
+              {char}
+            </span>
+          );
+        })}
+        <input
+          ref={input}
+          value={typed}
+          spellCheck={false}
+          autoComplete="off"
+          autoCorrect="off"
+          aria-label="Type the sentence shown"
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          onKeyDown={(e) => {
+            if (started.current === null) started.current = performance.now();
+            if (e.key.length !== 1) return;
+            if (!down.current.has(e.key)) down.current.set(e.key, performance.now());
+            if (lastUp.current !== null) flight.current.push(performance.now() - lastUp.current);
+          }}
+          onKeyUp={(e) => {
+            const t = down.current.get(e.key);
+            if (t !== undefined) {
+              dwell.current.push(performance.now() - t);
+              down.current.delete(e.key);
+            }
+            lastUp.current = performance.now();
+          }}
+          onChange={(e) => {
+            const next = e.target.value.slice(0, PHRASE.length);
+            setTyped(next);
+            const correct = [...next].filter((c, i) => c === PHRASE[i]).length;
+            const mins = minutesElapsed();
+            setStats({
+              accuracy: next.length ? Math.round((correct / next.length) * 100) : 100,
+              wpm: mins > 0 ? Math.round(next.length / 5 / mins) : 0,
+              keys: dwell.current.length,
+            });
+            // Finishing the sentence ends the measurement on its own.
+            if (next.length === PHRASE.length) setTimeout(analyze, 0);
+          }}
+          className="absolute size-0 opacity-0"
+        />
+      </div>
+
+      {/* live readout while typing */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-8 gap-y-2 text-sm text-ink-muted">
+        <span className="tabular">
+          {typed.length} / {PHRASE.length} characters
+        </span>
+        <span className="tabular">{stats.accuracy}% accurate</span>
+        <span className="tabular">{stats.wpm} wpm</span>
+        <span className="ml-auto flex items-center gap-2">
+          {result ? (
+            <Button onClick={() => reset()}>Type it again</Button>
+          ) : (
+            <Button onClick={analyze} disabled={stats.keys < 8}>
+              Analyze what I typed
+            </Button>
+          )}
+          <Button variant="quiet" onClick={() => reset(false)}>
+            Forget my profile
+          </Button>
+        </span>
+      </div>
+
+      {/* progress as a hairline */}
+      <div className="mt-3 h-px w-full bg-rule">
+        <div
+          className="h-px bg-ink transition-[width] duration-150"
+          style={{ width: `${progress * 100}%` }}
+        />
       </div>
 
       {result && (
-        <div className="mt-4 border-t border-rule pt-4">
-          <p className="text-base leading-snug">
+        <div className="mt-5 border-t border-rule pt-4">
+          <p className="max-w-[64ch] text-lg font-medium leading-snug tracking-tight">
             {String(result.rows.find((r) => r.k === "verdict")?.v)}
           </p>
           <Table cols={["46%", "auto"]} className="mt-3">
             <tbody>
               {result.rows
                 .filter((r) =>
-                  ["mean key hold (dwell)", "mean gap between keys (flight)", "typing speed", "distance from stored profile"].includes(r.k)
+                  [
+                    "mean key hold (dwell)",
+                    "mean gap between keys (flight)",
+                    "typing speed",
+                    "distance from stored profile",
+                  ].includes(r.k)
                 )
                 .map((r) => (
                   <tr key={r.k} className="align-top">
@@ -185,7 +270,10 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
                 ))}
             </tbody>
           </Table>
-          <a href="#typing" className="mt-3 inline-block text-sm text-ink-muted no-underline hover:text-ink hover:underline">
+          <a
+            href="#typing"
+            className="mt-3 inline-block text-sm text-ink-muted no-underline hover:text-ink hover:underline"
+          >
             Everything measured →
           </a>
         </div>

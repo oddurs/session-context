@@ -9,7 +9,7 @@ export type Category = {
   subgroups: Subgroup[];
 };
 
-/** How the raw tables are organised: six categories, each with subsections. */
+/** How the raw tables are organized: six categories, each with subsections. */
 export const CATEGORIES: Category[] = [
   {
     id: "server",
@@ -25,7 +25,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     id: "identity",
-    title: "How recognisable you are",
+    title: "How recognizable you are",
     icon: "fingerprint",
     blurb:
       "Whether this site can pick you out of a crowd and know you are the same person who visited before — without you logging in, and without relying on cookies.",
@@ -33,7 +33,7 @@ export const CATEGORIES: Category[] = [
       { title: "Your device fingerprint", ids: ["visitor-id", "fp-components", "fingerprints"] },
       { title: "Identifiers stored on your machine", ids: ["persistence"] },
       { title: "Checks for faked or automated browsers", ids: ["worker", "tamper"] },
-      { title: "Your privacy defences, and whether they show", ids: ["privacy"] },
+      { title: "Your privacy defenses, and whether they show", ids: ["privacy"] },
       { title: "Cross-site tracking", ids: ["third-party", "trackers"] },
     ],
   },
