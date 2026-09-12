@@ -61,10 +61,37 @@ export function useAnchorScroll() {
       if (id) align(id);
     };
 
+    /**
+     * A link followed *into* this page names a section that does not exist
+     * yet: the data page collects before it renders anything. So wait for the
+     * target to appear, and keep aligning while the page settles around it.
+     */
+    const waitForTarget = () => {
+      const id = decodeURIComponent(location.hash.slice(1));
+      if (!id) return;
+
+      const deadline = Date.now() + 20_000;
+      const poll = () => {
+        if (cancelled) return;
+        const el = document.getElementById(id);
+        // Present is not enough: until the page reveals its sections the
+        // target is display:none, and measuring it returns zero — which is
+        // how a cross-page link ended up scrolling to the top of the page.
+        const laidOut = el ? el.getBoundingClientRect().height > 0 : false;
+        if (laidOut) {
+          align(id);
+          // Sections keep arriving for a moment after the first one lands.
+          setTimeout(() => !cancelled && align(id), 1200);
+          return;
+        }
+        if (Date.now() < deadline) setTimeout(poll, 100);
+      };
+      poll();
+    };
+
     document.addEventListener("click", onClick);
     addEventListener("hashchange", onHashChange);
-    // A link followed into the page should land correctly too.
-    if (location.hash) setTimeout(onHashChange, 300);
+    waitForTarget();
 
     return () => {
       cancelled = true;
