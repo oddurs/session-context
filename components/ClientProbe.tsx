@@ -39,6 +39,7 @@ import { TypingBiometrics } from "./TypingBiometrics";
 import { EraseButton } from "./EraseButton";
 import { Icon } from "./Icon";
 import { Button, Checkbox, RuleHeading, cx } from "./ui";
+import { StickyBar } from "./StickyBar";
 
 /** Raw-data category → the matching group on the methods page. */
 const METHODS_GROUP: Record<string, string> = {
@@ -324,42 +325,36 @@ export function ClientProbe({
         ))}
       </dl>
 
-      {/* sticky bar: where you are, and what you can do about it */}
-      <div className="sticky top-0 z-40 -mx-4 mb-10 border-b border-rule bg-paper px-4 py-2 sm:-mx-6 sm:px-6">
-        <div className="mx-auto flex max-w-page items-center gap-4">
-          <button
-            type="button"
-            title="Back to the top"
-            onClick={() => scrollTo({ top: 0 })}
-            className="truncate text-left text-sm text-ink-muted hover:text-ink"
-          >
-            {!revealed
-              ? "Collecting…"
-              : activeId === "plain" || !activeId
+      {/* The bar is contextual at rest and takes over identity and navigation
+          once the masthead has scrolled away. */}
+      <StickyBar
+        current="data"
+        section={
+          !revealed
+            ? "Collecting…"
+            : activeId === "plain" || !activeId
               ? "In plain English"
               : [
                   CATEGORIES.find((c) => c.id === activeCategory)?.title,
                   all.find((s) => s.id === activeId)?.title,
                 ]
                   .filter(Boolean)
-                  .join("  ·  ")}
-          </button>
-          <div className="ml-auto flex items-center gap-1">
-            <Button variant="quiet" onClick={() => void collect()} disabled={busy !== null}>
-              <Icon name="refresh" className="size-3.5" />
-              {busy === "collect" ? "Collecting…" : "Re-collect"}
-            </Button>
-            <Button variant="quiet" onClick={copyJSON} disabled={!sections.length}>
-              <Icon name="copy" className="size-3.5" />
-              Copy JSON
-            </Button>
-            <Button variant="quiet" onClick={downloadJSON} disabled={!sections.length}>
-              <Icon name="download" className="size-3.5" />
-              Download
-            </Button>
-          </div>
-        </div>
-      </div>
+                  .join("  ·  ")
+        }
+      >
+        <Button variant="quiet" onClick={() => void collect()} disabled={busy !== null}>
+          <Icon name="refresh" className="size-3.5" />
+          {busy === "collect" ? "Collecting…" : "Re-collect"}
+        </Button>
+        <Button variant="quiet" onClick={copyJSON} disabled={!sections.length}>
+          <Icon name="copy" className="size-3.5" />
+          Copy JSON
+        </Button>
+        <Button variant="quiet" onClick={downloadJSON} disabled={!sections.length}>
+          <Icon name="download" className="size-3.5" />
+          Download
+        </Button>
+      </StickyBar>
 
       <div className="lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
         {/* contents rail */}

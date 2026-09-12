@@ -6,6 +6,7 @@ import { useScrollSpy } from "@/lib/use-scroll-spy";
 import { useAnchorScroll } from "@/lib/use-anchor-scroll";
 import { useMediaQuery } from "@/lib/use-client-value";
 import { cx } from "./ui";
+import { StickyBar } from "./StickyBar";
 
 export const DESIGN_SECTIONS = [
   { id: "principles", title: "Principles" },
@@ -25,24 +26,14 @@ export function DesignBar() {
   const current = DESIGN_SECTIONS.find((s) => s.id === active);
 
   return (
-    <div className="sticky top-0 z-40 -mx-4 mb-10 border-b border-rule bg-paper px-4 py-2 sm:-mx-6 sm:px-6">
-      <div className="mx-auto flex max-w-page items-center gap-4">
-        <button
-          type="button"
-          title="Back to the top"
-          onClick={() => scrollTo({ top: 0 })}
-          className="truncate text-left text-sm text-ink-muted hover:text-ink"
-        >
-          {current?.title ?? "Design"}
-        </button>
-        <Link
-          href="/"
-          className="ml-auto shrink-0 text-sm text-ink-muted no-underline hover:text-ink hover:underline"
-        >
-          See the system in use →
-        </Link>
-      </div>
-    </div>
+    <StickyBar current="none" section={current?.title ?? "Design notes"}>
+      <Link
+        href="/"
+        className="hidden text-sm text-ink-muted no-underline hover:text-ink hover:underline md:inline"
+      >
+        See the system in use →
+      </Link>
+    </StickyBar>
   );
 }
 
