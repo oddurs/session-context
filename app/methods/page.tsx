@@ -1,9 +1,9 @@
-import { Fragment } from "react";
 import { DECLINED, METHOD_GROUPS } from "@/lib/methods";
 import { SiteHeader } from "@/components/SiteHeader";
 import { MethodsBar, MethodsContents } from "@/components/MethodsNav";
+import { MethodEntry } from "@/components/MethodEntry";
 import { Icon } from "@/components/Icon";
-import { Disclosure, RuleHeading } from "@/components/ui";
+import { RuleHeading } from "@/components/ui";
 
 export const metadata = {
   title: "Methods",
@@ -17,23 +17,6 @@ export const metadata = {
     url: "/methods",
   },
 };
-
-/** Render `backticked` spans as inline code — the only mono on this page. */
-function Text({ children }: { children: string }) {
-  return (
-    <>
-      {children.split(/(`[^`]+`)/g).map((part, i) =>
-        part.startsWith("`") && part.endsWith("`") ? (
-          <code key={i} className="font-mono text-[0.95em] text-ink">
-            {part.slice(1, -1)}
-          </code>
-        ) : (
-          <Fragment key={i}>{part}</Fragment>
-        )
-      )}
-    </>
-  );
-}
 
 export default function MethodsPage() {
   const total = METHOD_GROUPS.reduce((n, g) => n + g.methods.length, 0);
@@ -86,33 +69,7 @@ export default function MethodsPage() {
               </p>
 
               {g.methods.map((m) => (
-                <article key={m.name} className="border-t border-rule py-5 first:border-t-0 first:pt-3">
-                  <h3 className="max-w-[58ch] text-lg font-medium leading-snug tracking-tight">
-                    {m.name}
-                  </h3>
-                  <p className="mt-2 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
-                    <Text>{m.reveals}</Text>
-                  </p>
-                  <p className="mt-2 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
-                    <Text>{m.how}</Text>
-                  </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2">
-                    <span className="text-xs text-ink-faint">{m.standing}</span>
-                    <Disclosure summary="Where defenses stand">
-                      <p className="max-w-[72ch] border-t border-rule pt-2 text-sm leading-relaxed text-ink-muted">
-                        <Text>{m.status}</Text>
-                      </p>
-                    </Disclosure>
-                    {m.section && (
-                      <a
-                        href={`/#${m.section}`}
-                        className="text-sm text-ink-muted no-underline hover:text-ink hover:underline"
-                      >
-                        See the data →
-                      </a>
-                    )}
-                  </div>
-                </article>
+                <MethodEntry key={m.name} method={m} />
               ))}
             </section>
           ))}
