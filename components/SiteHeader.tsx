@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "./Icon";
+import { Logo } from "./Logo";
 import { REPO_URL } from "@/lib/site";
 
 /** Masthead and cross-page navigation, shared by both routes. */
@@ -28,7 +29,7 @@ export function SiteHeader({
           href="/"
           className="flex items-center gap-2.5 text-[1.9rem] font-semibold leading-none tracking-[-0.025em] no-underline"
         >
-          <Icon name="fingerprint" className="size-7 shrink-0" />
+          <Logo className="h-8 w-auto shrink-0" />
           Session Context
         </Link>
         <nav className="flex items-center gap-5 text-sm">

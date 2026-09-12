@@ -3,7 +3,7 @@ import { DECLINED, METHOD_GROUPS } from "@/lib/methods";
 import { SiteHeader } from "@/components/SiteHeader";
 import { MethodsBar, MethodsContents } from "@/components/MethodsNav";
 import { Icon } from "@/components/Icon";
-import { RuleHeading } from "@/components/ui";
+import { Disclosure, RuleHeading } from "@/components/ui";
 
 export const metadata = {
   title: "Methods",
@@ -76,70 +76,68 @@ export default function MethodsPage() {
 
         <div className="min-w-0">
           {METHOD_GROUPS.map((g) => (
-            <section key={g.id} id={g.id} className="mb-16">
-              <div className="mb-8 border-b border-ink pb-2">
-                <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
-                  <Icon name={g.icon} className="size-4 text-ink-muted" />
-                  {g.title}
-                </h2>
-                <p className="mt-1.5 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
-                  {g.intro}
-                </p>
-              </div>
+            <section key={g.id} id={g.id} className="mt-12 first:mt-0">
+              <RuleHeading as="h2" className="mb-2">
+                <Icon name={g.icon} className="size-4 text-ink-faint" />
+                {g.title}
+              </RuleHeading>
+              <p className="mb-6 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
+                {g.intro}
+              </p>
 
               {g.methods.map((m) => (
-                <article key={m.name} className="border-t border-rule py-6 first:border-t-0 first:pt-0">
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-                    <h3 className="text-lg font-medium leading-snug tracking-tight">{m.name}</h3>
-                    {m.section && (
-                      <a
-                        href={`/#${m.section}`}
-                        className="shrink-0 text-sm text-ink-muted no-underline hover:text-ink hover:underline"
-                      >
-                        See the data →
-                      </a>
-                    )}
-                  </div>
-
-                  <p className="mt-2 max-w-[72ch] text-base leading-relaxed">
+                <article key={m.name} className="border-t border-rule py-5 first:border-t-0 first:pt-3">
+                  <h3 className="max-w-[58ch] text-lg font-medium leading-snug tracking-tight">
+                    {m.name}
+                  </h3>
+                  <p className="mt-2 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
                     <Text>{m.reveals}</Text>
                   </p>
                   <p className="mt-2 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
                     <Text>{m.how}</Text>
                   </p>
-
-                  <div className="mt-3 max-w-[72ch] border-l border-rule pl-3">
-                    <span className="text-xs text-ink-faint">Where defenses stand · {m.standing}</span>
-                    <p className="mt-0.5 text-sm leading-relaxed text-ink-muted">
-                      <Text>{m.status}</Text>
-                    </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+                    <span className="text-xs text-ink-faint">{m.standing}</span>
+                    <Disclosure summary="Where defenses stand">
+                      <p className="max-w-[72ch] border-t border-rule pt-2 text-sm leading-relaxed text-ink-muted">
+                        <Text>{m.status}</Text>
+                      </p>
+                    </Disclosure>
+                    {m.section && (
+                      <a
+                        href={`/#${m.section}`}
+                        className="text-sm text-ink-muted no-underline hover:text-ink hover:underline"
+                      >
+                        See the data →
+                      </a>
+                    )}
                   </div>
                 </article>
               ))}
             </section>
           ))}
 
-          <section id="declined" className="mb-16">
-            <div className="mb-8 border-b border-ink pb-2">
-              <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
-                <Icon name="shield" className="size-4 text-ink-muted" />
-                Deliberately not built
-              </h2>
-              <p className="mt-1.5 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
+          <section id="declined" className="mt-12">
+            <RuleHeading as="h2" className="mb-2">
+              <Icon name="shield" className="size-4 text-ink-faint" />
+              Deliberately not built
+            </RuleHeading>
+            <div className="mb-6">
+              <p className="max-w-[74ch] text-sm leading-relaxed text-ink-muted">
                 A demonstration of surveillance should not itself be surveillance. These
                 techniques are real, documented, and would have worked here. Each was left
                 out for a stated reason.
               </p>
             </div>
             {DECLINED.map((d) => (
-              <article key={d.name} className="border-t border-rule py-5 first:border-t-0 first:pt-0">
+              <article key={d.name} className="border-t border-rule py-5 first:border-t-0 first:pt-3">
                 <h3 className="text-lg font-medium leading-snug tracking-tight">{d.name}</h3>
                 <p className="mt-2 max-w-[72ch] text-sm leading-relaxed text-ink-muted">{d.why}</p>
               </article>
             ))}
           </section>
 
-          <RuleHeading className="mb-3">Built with</RuleHeading>
+          <RuleHeading className="mt-12 mb-3">Built with</RuleHeading>
           <p className="max-w-[74ch] text-sm leading-relaxed text-ink-muted">
             FingerprintJS, ua-parser-js and detectIncognito alongside direct platform
             probes. Every value on the data page is computed and displayed locally;

@@ -50,7 +50,7 @@ export function RuleHeading({
 }: {
   children: ReactNode;
   className?: string;
-  as?: "h3" | "h4";
+  as?: "h2" | "h3" | "h4";
 }) {
   return (
     <Tag className={cx("flex items-center gap-3 text-sm font-medium text-ink-muted", className)}>

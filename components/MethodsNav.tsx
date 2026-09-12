@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef } from "react";
 import { METHOD_GROUPS } from "@/lib/methods";
 import { useScrollSpy } from "@/lib/use-scroll-spy";
 import { useMediaQuery } from "@/lib/use-client-value";
-import { Icon } from "./Icon";
 import { cx } from "./ui";
 
 const NAV_ITEMS = [
@@ -71,7 +70,6 @@ export function MethodsContents() {
                     : "border-transparent text-ink-muted"
                 )}
               >
-                <Icon name={item.icon} className="size-3.5 shrink-0 translate-y-0.5 text-ink-faint" />
                 <span className="flex-1">{item.title}</span>
                 <span className="text-xs text-ink-faint tabular">{item.count}</span>
               </a>
