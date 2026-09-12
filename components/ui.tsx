@@ -280,7 +280,7 @@ export function Stat({ label, value }: { label: string; value: ReactNode }) {
 
 export function CodeBlock({ children }: { children: string }) {
   return (
-    <pre className="overflow-x-auto border border-rule bg-sunken p-3 font-mono text-sm leading-relaxed whitespace-pre-wrap break-all">
+    <pre className="overflow-x-auto border border-rule bg-sunken p-3 font-mono text-sm leading-relaxed whitespace-pre">
       {children}
     </pre>
   );

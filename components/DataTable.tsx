@@ -49,8 +49,8 @@ function Value({ v }: { v: unknown }) {
   return <>{text}</>;
 }
 
-function Term({ field }: { field: string }) {
-  const def = lookupTerm(field);
+function Term({ field, sectionId }: { field: string; sectionId?: string }) {
+  const def = lookupTerm(field, sectionId);
   if (!def) return null;
   return (
     <Tooltip label={def}>
@@ -59,7 +59,15 @@ function Term({ field }: { field: string }) {
   );
 }
 
-export function DataTable({ rows, hideEmpty }: { rows: Row[]; hideEmpty?: boolean }) {
+export function DataTable({
+  rows,
+  hideEmpty,
+  sectionId,
+}: {
+  rows: Row[];
+  hideEmpty?: boolean;
+  sectionId?: string;
+}) {
   const visible = hideEmpty ? rows.filter((r) => !isUnreported(r.v)) : rows;
   const hasNotes = visible.some((r) => r.n);
   if (!visible.length)
@@ -83,7 +91,7 @@ export function DataTable({ rows, hideEmpty }: { rows: Row[]; hideEmpty?: boolea
             <tr key={`${r.k}-${i}`} className="align-top hover:bg-sunken/70">
               <Td mono className={cx(empty && "text-ink-faint")}>
                 {r.k}
-                <Term field={r.k} />
+                <Term field={r.k} sectionId={sectionId} />
               </Td>
               <Td mono className="whitespace-pre-wrap">
                 <Value v={r.v} />
@@ -122,7 +130,7 @@ function SectionBlockBase({ section, hideEmpty }: { section: Section; hideEmpty?
           {section.note}
         </p>
       )}
-      <DataTable rows={section.rows} hideEmpty={hideEmpty} />
+      <DataTable rows={section.rows} hideEmpty={hideEmpty} sectionId={section.id} />
     </section>
   );
 }

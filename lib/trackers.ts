@@ -15,6 +15,13 @@ export type TrackerPayload = {
   body: string;
 };
 
+/** Query-string payloads read better as aligned `key = value` lines. */
+function formatParams(params: URLSearchParams): string {
+  const entries = [...params.entries()].filter(([, v]) => v !== "");
+  const width = Math.max(...entries.map(([k]) => k.length));
+  return entries.map(([k, v]) => `${k.padEnd(width)} = ${v}`).join("\n");
+}
+
 function pick(sections: Section[]) {
   const m = new Map<string, Map<string, unknown>>();
   for (const s of sections) {
@@ -152,14 +159,14 @@ export function buildTrackerPayloads(sections: Section[]): TrackerPayload[] {
       vendor: "Google Analytics 4",
       note: "The request the gtag.js snippet fires on page view. Your screen size, language, referring page and a persistent client id travel as query parameters; your IP address and user agent are read from the request itself.",
       endpoint: "POST https://www.google-analytics.com/g/collect",
-      body: ga4.toString().split("&").join("\n&"),
+      body: formatParams(ga4),
     },
     {
       id: "meta",
       vendor: "Meta (Facebook) Pixel",
       note: "The PageView beacon. The `fbp` parameter is the browser identifier Meta stores in a first-party cookie on the site running the pixel, which is how it follows one person between unrelated sites.",
       endpoint: "GET https://www.facebook.com/tr/",
-      body: meta.toString().split("&").join("\n&"),
+      body: formatParams(meta),
     },
     {
       id: "openrtb",

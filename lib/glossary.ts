@@ -4,6 +4,45 @@
  * "WebGL 1 · UNMASKED_RENDERER" picks up the WebGL explanation.
  */
 export const GLOSSARY: [RegExp, string][] = [
+  // ── specific fields, matched before the broader patterns below ──
+  [/^visitorId$|^confidence|components collected|debug string/i, "The output of the composite fingerprinter: one identifier derived from dozens of signals, with the library's own estimate of how reliable it is."],
+  [/domBlockers/i, "A check for ad and tracker blockers, performed by planting decoy elements that blocklists are known to remove."],
+  [/fontPreferences|screenFrame|osCpu|vendorFlavors|cpuClass|openDatabase|applePay|privateClickMeasurement/i, "One entropy source sampled by the fingerprinting library. Individually weak; the combination is what identifies."],
+  [/assigned identifier|recovered from|storage mechanisms|copy \(before\)|respawn|visit count|first seen/i, "Part of the respawning demonstration: one identifier written to several stores at once, then restored from whichever copy survived."],
+  [/etag|revalidat/i, "An identifier living in the HTTP cache rather than in site data. The browser returns it whenever it checks whether its cached copy is still fresh, so clearing cookies does not remove it."],
+  [/probes in the stylesheet|probes that matched|javascript was disabled/i, "Results of the CSS-only fingerprint: one style rule per condition, each loading a different image, so the server learns which conditions were true without running any script."],
+  [/frame's origin|frame recognised|third-party (cookie|localStorage)|partition|referrer passed/i, "Behaviour of an embedded frame from a different origin — the position an advertising tag occupies on a normal site."],
+  [/dwell|flight|typing speed|distance from stored|verdict|keystrokes/i, "Keystroke dynamics: how long keys are held and how long the gaps between them last. Stable enough per person to work as a biometric, with no permission prompt."],
+  [/pointermove|click events|keydown events|scroll events|visibility changes|time on page|pointer speed|curvature|acceleration|movement samples/i, "Live observation of how you are using this page. Ordinary events, readable by any script, and enough to describe your hand."],
+  [/benchmark run|drift across|composite score|float math|typed array|sha-256|fastest run|slowest run/i, "Timed work used to classify the device. Absolute speed suggests what the machine cost; how it slows down suggests its cooling and power state."],
+  [/pressure/i, "The Compute Pressure API, which reports how loaded the processor currently is — and therefore what else you are running."],
+  [/other tabs|broadcastchannel|sharedworker|locks|storage events/i, "Channels that let tabs of the same site see each other, so anything learned in one tab is available in all of them."],
+  [/max_texture|max_viewport|max_renderbuffer|vertex_attribs|texture_image_units|aliased|shading_language|antialias|extension/i, "A capability limit reported by the graphics driver. The exact combination is characteristic of one GPU and driver version."],
+  [/decodinginfo|powerefficient|smooth|h\.26|av1|vp9|opus/i, "Whether this format decodes at all, decodes smoothly, and decodes in hardware. Hardware support closely tracks the chipset."],
+  [/getinstalledrelatedapps/i, "Detects whether a companion native or installed web app is present on the device."],
+  [/audioinput|videoinput|audiooutput|getsupportedconstraints|getdisplaymedia|device\[/i, "Recording and playback hardware. The count is visible with no permission; names and stable identifiers require one."],
+  [/immersive|xr\./i, "Virtual and augmented reality support, which indicates whether a headset is attached."],
+  [/keyboard layout|maps to/i, "The physical keyboard layout, which usually indicates the country the machine was bought in."],
+  [/samplerate|baselatency|outputlatency|maxchannelcount|channelinterpretation|destination\./i, "Properties of the actual audio output device, including its sample rate and channel count."],
+  [/speechsynthesis|voice list/i, "Installed text-to-speech voices. The set is strongly tied to the operating system, its version and the languages installed."],
+  [/x-forwarded|x-real-ip|host requested|request line|proxy chain/i, "Address information added by proxies, or read from the connection itself."],
+  [/accept-encoding|upgrade-insecure|priority|^accept$|sec-fetch/i, "A request header the browser sends on its own. Each describes what the browser will accept, or the context the request was made in."],
+  [/server epoch|server uptime|server time|runtime/i, "The server's own state at the moment of the request. Comparing its clock with yours measures the drift of your machine's clock, which is itself an identifier."],
+  [/cookie (bytes|names)|cookies sent/i, "What your browser sent back from earlier visits, before any script ran."],
+  [/screen\.(width|height|avail|color|pixel)|orientation|isextended/i, "Physical display geometry, reported without permission. A second screen and an unusual resolution both narrow you down."],
+  [/inner(width|height)|outer(width|height)|screenx|screeny|chrome height|clientwidth|clientheight|scrollx/i, "The size of the window and the space the page was given. The difference exposes browser chrome, and often whether developer tools are open."],
+  [/history\.length|window\.name|opener|framed|activeelement|readystate|visibilitystate|hasfocus|designmode|lastmodified|compatmode|characterset|contenttype|fullscreenenabled/i, "Ambient state of this document: how many pages you have visited in this tab, whether it is embedded, and whether you are looking at it."],
+  [/maxtouchpoints|pdfviewerenabled|javaenabled|productsub|vendorsub|appcodename|appname|appversion|oscpu|buildid|useractivation/i, "A legacy `navigator` property. Several are now frozen to fixed values precisely because they were used to identify people."],
+  [/notification|permission state/i, "Whether a capability is allowed, blocked, or has never been asked about — readable without showing a prompt."],
+  [/^latitude|^longitude|^accuracy|^altitude|^heading|^speed$/i, "A reading from the operating system's location service, accurate to the metres shown."],
+  [/clipboard (length|contents|item)/i, "The contents of your clipboard, handed over in full once the prompt is approved."],
+  [/screens attached|screen\[|current screen label/i, "Every display attached to the machine, including its position on the virtual desktop and its manufacturer label."],
+  [/user state|screen state/i, "Whether you are actively using the computer and whether the screen is locked, reported continuously in the background."],
+  [/orientation sample|motion sample|α |absolute=/i, "Raw motion-sensor output. Calibration noise in these readings is unique to the individual physical device."],
+  [/appears to be installed|no response|scheme flooding/i, "Detected by asking the browser to open an application's private URL and watching whether this window lost focus."],
+  [/not exposed to workers|mismatch|main:/i, "The same value read on the page and inside a Web Worker. A mismatch means something is rewriting the value on the page only."],
+  [/automation globals|chromedriver|prototype chain|tostring tag|iframe contentwindow|descriptor/i, "Integrity checks on the JavaScript environment, used to spot automated browsers and tools that patch built-in functions."],
+
   [/user.?agent|^ua\b|userAgent/i, "A line of text your browser announces itself with on every request — its name, version and operating system. It is freely editable, which is why sites cross-check it against everything else."],
   [/client hint|sec-ch-/i, "A newer, structured replacement for the user-agent line. The server asks for specific details (processor type, exact version, screen width) and the browser then attaches them to every following request automatically."],
   [/canvas/i, "A drawing surface web pages use for graphics. Because your graphics card, drivers and fonts all affect the exact pixels produced, the same drawing comes out subtly different on different machines — which makes it an identifier."],
@@ -52,7 +91,61 @@ export const GLOSSARY: [RegExp, string][] = [
   [/secure context|crossoriginisolated|isolated/i, "Security states of the page. Some capabilities are only available over HTTPS or when the page is isolated from other sites."],
 ];
 
-export function lookupTerm(fieldName: string): string | undefined {
+/**
+ * Fallback context per section, so a field with no specific entry still
+ * explains where it came from and why it matters.
+ */
+export const SECTION_CONTEXT: Record<string, string> = {
+  "request-headers": "A header your browser attached to the request for this page, before any script ran. Sent on every request, to every site.",
+  "client-hints": "A value your browser volunteered because this server asked for it with Accept-CH. Higher precision than the user-agent string, and sent automatically once requested.",
+  connection: "A fact read from the network connection itself, below the web-page layer.",
+  "server-derived": "Something the server worked out from the request. No external service was consulted.",
+  "css-noscript": "Learned from CSS alone — a style rule matched and fetched its image. Disabling JavaScript does not prevent this.",
+  "visitor-id": "Part of the composite identifier that recognises this browser on a later visit without storing anything.",
+  "fp-components": "One entropy source sampled by the fingerprinting library, with how long it took to read.",
+  fingerprints: "A digest of how this machine renders or processes something. Identical hardware and software produce identical digests.",
+  persistence: "Part of the respawning demonstration: one identifier written across several independent stores.",
+  worker: "The same value read inside a Web Worker, to catch values that are being faked on the page only.",
+  tamper: "An integrity check on the JavaScript environment, used to detect automation and patched built-in functions.",
+  privacy: "A privacy defence, and whether it is detectable — which is itself a signal.",
+  "third-party": "Behaviour of an embedded frame from another origin, the position an advertising tag occupies.",
+  navigator: "A property of the `navigator` object, readable by any script with no permission.",
+  "ua-parsed": "Inferred from the user-agent string alone, the way analytics platforms parse it.",
+  "ua-client-hints": "A structured client-hint value, requested by the page rather than broadcast.",
+  features: "Whether this platform API exists here. The exact combination narrows down browser, version and operating system.",
+  engine: "A quirk of the JavaScript engine, which reveals the real browser even when the user-agent string says otherwise.",
+  fonts: "Detected by measuring text width off-screen — no permission needed. Installed fonts follow the software you own.",
+  screen: "Display and window geometry, readable without permission.",
+  "system-ui": "Resolved from your operating system's theme and settings, and shared with every page you open.",
+  hardware: "What the machine reports about its own hardware, or which device APIs this browser exposes at all.",
+  graphics: "Reported by the graphics driver, which names the exact chip with no prompt.",
+  benchmark: "Timed work used to classify the device, independent of anything it claims about itself.",
+  thermal: "Repeated measurements showing how the machine behaves under sustained load.",
+  audio: "A property of the real audio output device, or of the installed speech voices.",
+  codecs: "Which media formats this device can play, record or decrypt.",
+  "media-capabilities": "Whether a format decodes smoothly and in hardware — effectively a chipset signature.",
+  devices: "Attached cameras, microphones and speakers. Counting them needs no permission.",
+  network: "Live measurements of your internet connection, reported to any page that asks.",
+  preferences: "A setting your operating system shares with every website so pages can adapt.",
+  locale: "Your region and language settings, handed over with no permission.",
+  document: "State of this page: where it sits, what linked here, and whether you are looking at it.",
+  storage: "Origin-scoped storage. Quota is derived from free disk space, which makes it a personal number.",
+  permissions: "The current state of one permission, readable without showing a prompt.",
+  performance: "The browser's own measurement of how this page load went.",
+  interaction: "Observed live as you use the page. No permission is involved.",
+  "cross-tab": "A channel that lets tabs of this site see and talk to each other.",
+  typing: "Measured from the rhythm of your typing and pointer movement, not from what you typed.",
+  geolocation: "From the operating system's location service, after you approved the prompt.",
+  "local-fonts": "The real installed font list, straight from the operating system, after approval.",
+  "device-labels": "Hardware names and stable identifiers revealed by granting camera or microphone access.",
+  "screen-details": "Every attached display, revealed by the window-management permission.",
+  clipboard: "Read from your clipboard after you approved the prompt.",
+  idle: "Whether you are at the keyboard, reported continuously after approval.",
+  sensors: "Motion-sensor output, whose calibration noise is unique to the physical device.",
+  schemes: "Detected by asking the browser to open an application's private URL scheme.",
+};
+
+export function lookupTerm(fieldName: string, sectionId?: string): string | undefined {
   for (const [re, def] of GLOSSARY) if (re.test(fieldName)) return def;
-  return undefined;
+  return sectionId ? SECTION_CONTEXT[sectionId] : undefined;
 }
