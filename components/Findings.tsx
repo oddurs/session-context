@@ -3,7 +3,8 @@
 import type { Finding } from "@/lib/findings";
 import { HOW_ICON, ICON_FOR_GROUP } from "@/lib/taxonomy";
 import { Icon } from "./Icon";
-import { Disclosure, Table, Td } from "./ui";
+import { Json, looksLikeJson } from "./Json";
+import { Disclosure, RuleHeading, Table, Td } from "./ui";
 
 function Evidence({ f }: { f: Finding }) {
   return (
@@ -16,11 +17,13 @@ function Evidence({ f }: { f: Finding }) {
             {f.evidence.map((e, i) => (
               <tr key={i} className="align-top">
                 <Td mono className="text-ink-muted">{e.k}</Td>
-                <Td mono className="whitespace-pre-wrap">
+                <Td mono className="whitespace-pre-wrap [overflow-wrap:anywhere]">
                   {e.v === undefined || e.v === null || e.v === "" ? (
                     <span className="italic text-ink-faint">not reported</span>
                   ) : typeof e.v === "boolean" ? (
                     e.v ? "yes" : "no"
+                  ) : looksLikeJson(e.v) ? (
+                    <Json value={typeof e.v === "string" ? JSON.parse(e.v) : e.v} dense />
                   ) : (
                     String(e.v)
                   )}
@@ -52,11 +55,11 @@ export function Findings({ findings, groups }: { findings: Finding[]; groups: st
         const items = findings.filter((f) => f.group === g);
         if (!items.length) return null;
         return (
-          <section key={g} className="mt-10 first:mt-0">
-            <h3 className="flex items-center gap-2 text-base font-medium text-ink-muted">
+          <section key={g} className="mt-12 first:mt-0">
+            <RuleHeading as="h3" className="mb-1">
               <Icon name={ICON_FOR_GROUP[g] ?? "info"} className="size-4 text-ink-faint" />
               {g}
-            </h3>
+            </RuleHeading>
             <div>
               {items.map((f) => (
                 <article key={f.id} className="border-t border-rule py-5 first:border-t-0 first:pt-3">

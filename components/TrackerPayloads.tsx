@@ -5,6 +5,7 @@ import { useClientValue } from "@/lib/use-client-value";
 import type { Section } from "@/lib/types";
 import { buildTrackerPayloads } from "@/lib/trackers";
 import { Badge, Card, CodeBlock, Disclosure } from "./ui";
+import { Json, looksLikeJson } from "./Json";
 import { Icon } from "./Icon";
 
 /**
@@ -43,7 +44,7 @@ export function TrackerPayloads({ sections }: { sections: Section[] }) {
             <p className="mt-1.5 max-w-[76ch] text-sm leading-relaxed text-ink-muted">{p.note}</p>
             <p className="mt-2 font-mono text-sm text-ink-muted break-all">{p.endpoint}</p>
             <Disclosure className="mt-2" summary="Show the full payload">
-              <CodeBlock>{p.body}</CodeBlock>
+              {looksLikeJson(p.body) ? <Json value={JSON.parse(p.body)} /> : <CodeBlock>{p.body}</CodeBlock>}
             </Disclosure>
           </Card>
         ))}

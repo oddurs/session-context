@@ -39,6 +39,27 @@ export function Label({ children, className }: { children: ReactNode; className?
   return <div className={cx("label", className)}>{children}</div>;
 }
 
+/**
+ * A section label bound to its content by a hairline. Without the rule these
+ * read as fragments floating in whitespace.
+ */
+export function RuleHeading({
+  children,
+  className,
+  as: Tag = "h4",
+}: {
+  children: ReactNode;
+  className?: string;
+  as?: "h3" | "h4";
+}) {
+  return (
+    <Tag className={cx("flex items-center gap-3 text-sm font-medium text-ink-muted", className)}>
+      <span className="flex shrink-0 items-center gap-2">{children}</span>
+      <span aria-hidden className="h-px flex-1 bg-rule" />
+    </Tag>
+  );
+}
+
 /* ── badge: a caption, not a chip ────────────────────────────── */
 
 export function Badge({

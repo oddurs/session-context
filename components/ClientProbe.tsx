@@ -22,13 +22,14 @@ import {
 import { FINDING_GROUPS, deriveFindings } from "@/lib/findings";
 import { CATEGORIES } from "@/lib/taxonomy";
 import { SectionBlock, isUnreported } from "./DataTable";
+import { Json, looksLikeJson } from "./Json";
 import { Findings } from "./Findings";
 import { CssProbe } from "./CssProbe";
 import { ThirdParty } from "./ThirdParty";
 import { TrackerPayloads } from "./TrackerPayloads";
 import { TypingBiometrics } from "./TypingBiometrics";
 import { Icon } from "./Icon";
-import { Button, Card, Checkbox, Table, Td, cx } from "./ui";
+import { Button, Card, Checkbox, RuleHeading, Table, Td, cx } from "./ui";
 
 /** Raw-data category → the matching group on the methods page. */
 const METHODS_GROUP: Record<string, string> = {
@@ -530,8 +531,12 @@ export function ClientProbe({
                               {shown.map((r) => (
                                 <tr key={r.k} className="align-top">
                                   <Td className="text-sm text-ink-muted">{r.k}</Td>
-                                  <Td mono className="whitespace-pre-wrap">
-                                    {String(r.v)}
+                                  <Td mono className="whitespace-pre-wrap [overflow-wrap:anywhere]">
+                                    {looksLikeJson(r.v) ? (
+                                      <Json value={typeof r.v === "string" ? JSON.parse(r.v) : r.v} dense />
+                                    ) : (
+                                      String(r.v)
+                                    )}
                                   </Td>
                                 </tr>
                               ))}
@@ -574,7 +579,7 @@ export function ClientProbe({
               if (!present.length && !isIdentity) return null;
               return (
                 <div key={c.id} id={`cat-${c.id}`} className="mb-16">
-                  <div className="mb-8 border-b border-ink pb-2">
+                  <div className="mb-2 border-b border-ink pb-2">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
                       <h3 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
                         <Icon name={c.icon} className="size-4 text-ink-muted" />
@@ -598,8 +603,8 @@ export function ClientProbe({
                     const hasFrame = sg.ids.includes("third-party");
                     if (!inSub.length && !hasTrackers && !hasFrame) return null;
                     return (
-                      <div key={sg.title} className="mb-10">
-                        <h4 className="label mb-5">{sg.title}</h4>
+                      <div key={sg.title} className="mt-10 first:mt-0">
+                        <RuleHeading className="mb-5">{sg.title}</RuleHeading>
                         {inSub.map((s) => (
                           <SectionBlock key={s.id} section={s} hideEmpty={hideEmpty} />
                         ))}

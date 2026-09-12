@@ -3,11 +3,12 @@
 import { memo, useState } from "react";
 import type { Row, Section } from "@/lib/types";
 import { lookupTerm } from "@/lib/glossary";
-import { Icon } from "./Icon";
 import { LIVE_SECTIONS } from "@/lib/live";
+import { Icon } from "./Icon";
+import { Json, looksLikeJson } from "./Json";
 import { Table, Td, Th, Tooltip, cx } from "./ui";
 
-const LONG = 240;
+const LONG = 260;
 
 /** A value the browser refused, withheld, or has no support for. */
 export function isUnreported(v: unknown): boolean {
@@ -21,33 +22,42 @@ export function isUnreported(v: unknown): boolean {
   );
 }
 
+const NUMERIC = /^[\d.,:+\-\s]+(ms|s|px|%|GiB|MiB|KB|MB|Hz|dppx|Mb\/s)?$/;
+
 function Value({ v }: { v: unknown }) {
   const [open, setOpen] = useState(false);
 
-  if (v === undefined) return <span className="text-ink-faint italic">not reported</span>;
-  if (v === null) return <span className="text-ink-faint italic">null — not reported</span>;
-  if (v === "") return <span className="text-ink-faint italic">empty</span>;
+  if (v === undefined) return <span className="italic text-ink-faint">not reported</span>;
+  if (v === null) return <span className="italic text-ink-faint">null — not reported</span>;
+  if (v === "") return <span className="italic text-ink-faint">empty</span>;
   if (typeof v === "boolean")
     return <span className={v ? "text-ink" : "text-ink-muted"}>{v ? "yes" : "no"}</span>;
 
-  const text = typeof v === "object" ? JSON.stringify(v, null, 2) : String(v);
-  if (isUnreported(text)) return <span className="text-ink-faint italic">{text}</span>;
+  // Structured values keep their shape instead of being wrapped into nonsense.
+  if (looksLikeJson(v)) return <Json value={typeof v === "string" ? JSON.parse(v) : v} dense />;
+
+  const text = String(v);
+  if (isUnreported(text)) return <span className="italic text-ink-faint">{text}</span>;
 
   if (text.length > LONG) {
     return (
       <>
-        {open ? text : `${text.slice(0, LONG)}…`}{" "}
+        <span className="[overflow-wrap:anywhere]">
+          {open ? text : `${text.slice(0, LONG)}…`}
+        </span>{" "}
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="underline decoration-rule-strong underline-offset-2 hover:decoration-ink"
+          className="whitespace-nowrap text-ink-muted underline decoration-rule-strong underline-offset-2 hover:text-ink"
         >
-          {open ? "less" : `show all ${text.length} chars`}
+          {open ? "less" : `show all ${text.length}`}
         </button>
       </>
     );
   }
-  return <>{text}</>;
+  return (
+    <span className={cx("[overflow-wrap:anywhere]", NUMERIC.test(text) && "tabular")}>{text}</span>
+  );
 }
 
 function Term({ field, sectionId }: { field: string; sectionId?: string }) {
@@ -64,25 +74,29 @@ export function DataTable({
   rows,
   hideEmpty,
   sectionId,
+  caption,
 }: {
   rows: Row[];
   hideEmpty?: boolean;
   sectionId?: string;
+  caption?: string;
 }) {
   const visible = hideEmpty ? rows.filter((r) => !isUnreported(r.v)) : rows;
-  const hasNotes = visible.some((r) => r.n);
   if (!visible.length)
-    return <p className="text-sm text-ink-faint italic">Every field here was withheld.</p>;
+    return <p className="text-sm italic text-ink-faint">Every field here was withheld.</p>;
 
-  // Nothing scrolls sideways: every column wraps, and on narrow screens the
-  // note moves underneath the value instead of squeezing a third column.
+  // A third column is only worth its width when most rows have something in it.
+  const noted = visible.filter((r) => r.n).length;
+  const noteColumn = noted / visible.length >= 0.25;
+
   return (
-    <Table cols={hasNotes ? ["28%", "auto", "22%"] : ["30%", "auto"]}>
+    <Table cols={noteColumn ? ["27%", "auto", "23%"] : ["30%", "auto"]}>
+      {caption && <caption className="sr-only">{caption}</caption>}
       <thead>
         <tr>
           <Th>Field</Th>
           <Th>Value</Th>
-          {hasNotes && <Th className="hidden sm:table-cell">What it means</Th>}
+          {noteColumn && <Th className="hidden sm:table-cell">What it means</Th>}
         </tr>
       </thead>
       <tbody>
@@ -90,20 +104,31 @@ export function DataTable({
           const empty = isUnreported(r.v);
           return (
             <tr key={`${r.k}-${i}`} className="align-top hover:bg-sunken/70">
-              <Td mono className={cx(empty && "text-ink-faint")}>
+              <Td
+                mono
+                className={cx("break-words", empty ? "text-ink-faint" : "text-ink-muted")}
+              >
                 {r.k}
                 <Term field={r.k} sectionId={sectionId} />
               </Td>
-              <Td mono className="whitespace-pre-wrap">
+              <Td mono className="text-ink">
                 <Value v={r.v} />
-                {hasNotes && r.n && (
-                  <span className="mt-1 block font-sans text-sm text-ink-faint sm:hidden">
+                {r.n && !noteColumn && (
+                  <span className="mt-0.5 block font-sans text-sm text-ink-faint">{r.n}</span>
+                )}
+                {r.n && noteColumn && (
+                  <span className="mt-0.5 block font-sans text-sm text-ink-faint sm:hidden">
                     {r.n}
                   </span>
                 )}
               </Td>
-              {hasNotes && (
-                <Td className={cx("hidden text-sm sm:table-cell", empty ? "text-ink-faint" : "text-ink-muted")}>
+              {noteColumn && (
+                <Td
+                  className={cx(
+                    "hidden font-sans text-sm sm:table-cell",
+                    empty ? "text-ink-faint" : "text-ink-muted"
+                  )}
+                >
                   {r.n ?? ""}
                 </Td>
               )}
@@ -141,7 +166,12 @@ function SectionBlockBase({ section, hideEmpty }: { section: Section; hideEmpty?
           {section.note}
         </p>
       )}
-      <DataTable rows={section.rows} hideEmpty={hideEmpty} sectionId={section.id} />
+      <DataTable
+        rows={section.rows}
+        hideEmpty={hideEmpty}
+        sectionId={section.id}
+        caption={section.title}
+      />
     </section>
   );
 }
