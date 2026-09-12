@@ -28,7 +28,7 @@ export function TrackerPayloads({ sections }: { sections: Section[] }) {
           <Icon name="megaphone" className="size-4 text-ink-muted" />
           What a tracker would send about you
         </h3>
-        <Badge tone="alarm">constructed here · never sent</Badge>
+        <Badge tone="outline">constructed here · never sent</Badge>
       </div>
       <p className="mt-2 mb-3 max-w-[78ch] text-sm leading-relaxed text-ink-muted">
         These are the actual request shapes used by the most widely deployed

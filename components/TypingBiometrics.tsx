@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import type { Section } from "@/lib/types";
 import { mouseDynamics } from "@/lib/collect";
-import { Badge, Button, Card } from "./ui";
+import { Badge, Button, Card, Table, Td } from "./ui";
 
 const PHRASE = "the quick brown fox jumps over the lazy dog";
 const PROFILE_KEY = "dm_typing_profile";
@@ -24,6 +24,7 @@ const sd = (a: number[]) => {
 export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void }) {
   const [text, setText] = useState("");
   const [count, setCount] = useState(0);
+  const [result, setResult] = useState<Section | null>(null);
   const [status, setStatus] = useState<"idle" | "typing" | "done">("idle");
   const down = useRef<Map<string, number>>(new Map());
   const dwell = useRef<number[]>([]);
@@ -40,6 +41,7 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
     lastUp.current = null;
     started.current = null;
     setCount(0);
+    setResult(null);
   };
 
   const finish = () => {
@@ -77,7 +79,7 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
     }
 
     const md = mouseDynamics();
-    onResult({
+    const section: Section = {
       id: "typing",
       title: "Keystroke & Movement Biometrics",
       note:
@@ -106,15 +108,17 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
         { k: "mean pointer speed", v: md ? `${(md.meanSpeed * 1000).toFixed(0)} px/s` : undefined },
         { k: "pointer path curvature", v: md ? md.curvature.toFixed(3) : undefined, n: "hand movement signature" },
       ],
-    });
+    };
+    onResult(section);
+    setResult(section);
     setStatus("done");
   };
 
   return (
     <Card className="p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-base font-semibold tracking-tight">Type one sentence</h3>
-        <Badge tone="quiet">no permission needed</Badge>
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h4 className="text-base font-semibold tracking-tight">Type one sentence</h4>
+        <Badge>no permission needed</Badge>
       </div>
       <p className="mt-2 max-w-[76ch] text-sm leading-relaxed text-ink-muted">
         Type the phrase below. The page measures the rhythm, not the words, and
@@ -152,15 +156,40 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
         <Button onClick={finish} disabled={count < 8}>
           Analyse my typing
         </Button>
-        <Button variant="ghost" onClick={reset}>
-          Reset
+        <Button variant="quiet" onClick={reset}>
+          Start over
         </Button>
-        <span className="text-sm text-ink-faint">
-          {status === "done"
-            ? "measured — see “Keystroke & Movement Biometrics” below"
-            : `${count} keystrokes measured`}
-        </span>
+        {status !== "done" && (
+          <span className="text-sm text-ink-faint tabular">
+            {count} keystrokes measured
+          </span>
+        )}
       </div>
+
+      {result && (
+        <div className="mt-4 border-t border-rule pt-4">
+          <p className="text-base leading-snug">
+            {String(result.rows.find((r) => r.k === "verdict")?.v)}
+          </p>
+          <Table cols={["46%", "auto"]} className="mt-3">
+            <tbody>
+              {result.rows
+                .filter((r) =>
+                  ["mean key hold (dwell)", "mean gap between keys (flight)", "typing speed", "distance from stored profile"].includes(r.k)
+                )
+                .map((r) => (
+                  <tr key={r.k} className="align-top">
+                    <Td className="text-sm text-ink-muted">{r.k}</Td>
+                    <Td mono>{r.v === undefined ? "—" : String(r.v)}</Td>
+                  </tr>
+                ))}
+            </tbody>
+          </Table>
+          <a href="#typing" className="mt-3 inline-block text-sm text-ink-muted no-underline hover:text-ink hover:underline">
+            Everything measured →
+          </a>
+        </div>
+      )}
     </Card>
   );
 }

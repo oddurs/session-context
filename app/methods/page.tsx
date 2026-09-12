@@ -53,7 +53,7 @@ export default function MethodsPage() {
 
       {METHOD_GROUPS.map((g) => (
         <section key={g.id} id={g.id} className="mb-14">
-          <h3 className="flex items-center gap-2 border-b-2 border-ink pb-2 text-xl font-semibold tracking-tight">
+          <h3 className="flex items-center gap-2 border-b border-ink pb-2 text-xl font-semibold tracking-tight">
             <Icon name={g.icon} className="size-4 text-ink-muted" />
             {g.title}
           </h3>
@@ -91,7 +91,7 @@ export default function MethodsPage() {
       ))}
 
       <section id="declined" className="mb-14">
-        <h3 className="border-b-2 border-ink pb-2 text-xl font-semibold tracking-tight">
+        <h3 className="border-b border-ink pb-2 text-xl font-semibold tracking-tight">
           Deliberately not built
         </h3>
         <p className="mt-2 mb-6 max-w-[76ch] text-sm leading-relaxed text-ink-muted">

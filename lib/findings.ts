@@ -825,27 +825,6 @@ export function deriveFindings(sections: Section[]): Finding[] {
     [tabs]
   );
 
-  const verdict = g("typing", "verdict");
-  add(
-    {
-      id: "f-typing",
-      group: "What you did on this page",
-      headline: `Your typing rhythm was measured — ${String(verdict).toLowerCase()}.`,
-      detail:
-        "How long you hold each key and how long you pause between them is consistent enough to work as a biometric. Banks and fraud-scoring services use exactly this to decide whether the person at the keyboard is who they claim to be, and no permission prompt is involved.",
-      how: "Read by script",
-      sectionId: "typing",
-      evidence: [
-        ["typing", "mean key hold (dwell)"],
-        ["typing", "mean gap between keys (flight)"],
-        ["typing", "typing speed"],
-        ["typing", "distance from stored profile"],
-        ["typing", "verdict"],
-      ],
-    },
-    [verdict]
-  );
-
   const apps = sections.find((s) => s.id === "schemes")?.rows.filter((r) => String(r.v).startsWith("appears"));
   if (apps?.length) {
     add({

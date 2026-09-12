@@ -46,7 +46,7 @@
   --radius-sm: 2px;
   --radius-md: 3px;
 
-  --container-page: 1240px;
+  --container-page: 1080px;
 }
 
 @layer base {

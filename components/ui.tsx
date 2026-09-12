@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
 /* ═══════════════════════════════════════════════════════════════
-   Local UI primitives. No component runtime, no Radix — just the
-   handful of shapes this document needs, built on the token layer.
+   UI primitives. Minimal and typographic: hairline rules, no
+   filled controls, hierarchy carried by type size and weight.
    ═══════════════════════════════════════════════════════════════ */
 
 export function cx(...parts: (string | false | undefined | null)[]) {
@@ -18,57 +18,45 @@ export function Card({
 }: {
   children: ReactNode;
   className?: string;
-  tone?: "default" | "raised" | "alarm" | "caution";
+  tone?: "default" | "raised";
 }) {
-  const tones = {
-    default: "bg-surface border-rule",
-    raised: "bg-raised border-rule",
-    alarm: "bg-sunken border-rule-strong",
-    caution: "bg-sunken border-rule",
-  };
   return (
-    <div className={cx("border rounded-sm", tones[tone], className)}>{children}</div>
+    <div
+      className={cx(
+        "border border-rule",
+        tone === "raised" ? "bg-raised" : "bg-surface",
+        className
+      )}
+    >
+      {children}
+    </div>
   );
 }
 
-/* ── text bits ───────────────────────────────────────────────── */
+/* ── text ────────────────────────────────────────────────────── */
 
 export function Label({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cx("label", className)}>{children}</div>;
 }
 
-export function Prose({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <p className={cx("text-sm text-ink-muted max-w-[76ch] leading-relaxed", className)}>
-      {children}
-    </p>
-  );
-}
-
-/* ── badge ───────────────────────────────────────────────────── */
-
-const BADGE_TONES = {
-  neutral: "border-rule-strong text-ink-muted bg-surface",
-  accent: "border-ink bg-ink text-paper",
-  caution: "border-rule-strong text-ink bg-sunken",
-  alarm: "border-ink text-ink bg-transparent",
-  quiet: "border-rule text-ink-faint bg-transparent",
-};
+/* ── badge: a caption, not a chip ────────────────────────────── */
 
 export function Badge({
   children,
-  tone = "neutral",
+  tone = "quiet",
   className,
 }: {
   children: ReactNode;
-  tone?: keyof typeof BADGE_TONES;
+  tone?: "quiet" | "outline";
   className?: string;
 }) {
   return (
     <span
       className={cx(
-        "inline-flex items-center gap-1.5 border rounded-sm px-1.5 py-0.5 text-xs font-medium whitespace-nowrap",
-        BADGE_TONES[tone],
+        "inline-flex items-center gap-1.5 whitespace-nowrap text-xs",
+        tone === "outline"
+          ? "border border-rule px-1.5 py-0.5 text-ink-muted"
+          : "text-ink-faint",
         className
       )}
     >
@@ -77,15 +65,13 @@ export function Badge({
   );
 }
 
-/* ── button ──────────────────────────────────────────────────── */
+/* ── button: hairline outline or plain text, never filled ────── */
 
 const BUTTON_VARIANTS = {
   default:
-    "bg-surface border-rule-strong text-ink hover:bg-sunken active:bg-sunken disabled:text-ink-faint disabled:hover:bg-surface",
-  primary:
-    "bg-ink border-ink text-paper hover:bg-ink/90 disabled:bg-ink-faint disabled:border-ink-faint",
-  ghost:
-    "bg-transparent border-transparent text-ink-muted hover:bg-sunken hover:text-ink disabled:text-ink-faint",
+    "border border-rule-strong px-2.5 py-1 text-ink hover:bg-sunken disabled:border-rule disabled:text-ink-faint disabled:hover:bg-transparent",
+  quiet:
+    "border border-transparent px-1.5 py-1 text-ink-muted hover:text-ink hover:underline disabled:text-ink-faint disabled:no-underline",
 };
 
 export function Button({
@@ -110,7 +96,7 @@ export function Button({
       onClick={onClick}
       disabled={disabled}
       className={cx(
-        "inline-flex items-center gap-1.5 border rounded-sm px-2.5 py-1 text-sm transition-colors disabled:cursor-not-allowed",
+        "inline-flex items-center gap-1.5 bg-transparent text-sm transition-colors disabled:cursor-not-allowed",
         BUTTON_VARIANTS[variant],
         className
       )}
@@ -120,9 +106,9 @@ export function Button({
   );
 }
 
-/* ── toggle ──────────────────────────────────────────────────── */
+/* ── checkbox ────────────────────────────────────────────────── */
 
-export function Switch({
+export function Checkbox({
   checked,
   onChange,
   children,
@@ -132,11 +118,11 @@ export function Switch({
   children: ReactNode;
 }) {
   return (
-    <label className="inline-flex items-center gap-2 text-sm text-ink-muted cursor-pointer select-none">
+    <label className="inline-flex cursor-pointer select-none items-center gap-2 text-sm text-ink-muted hover:text-ink">
       <span
         className={cx(
-          "relative h-4 w-7 rounded-full border transition-colors",
-          checked ? "bg-ink border-ink" : "bg-sunken border-rule-strong"
+          "relative grid size-3.5 place-items-center border",
+          checked ? "border-ink" : "border-rule-strong"
         )}
       >
         <input
@@ -145,28 +131,27 @@ export function Switch({
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
         />
-        <span
-          className={cx(
-            "absolute top-0.5 h-2.5 w-2.5 rounded-full transition-all",
-            checked ? "left-3.5 bg-paper" : "left-0.5 bg-ink-faint"
-          )}
-        />
+        {checked && (
+          <svg viewBox="0 0 12 12" className="size-2.5" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M2.5 6.2 4.8 8.5 9.5 3.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
       </span>
       {children}
     </label>
   );
 }
 
-/* ── tooltip (CSS only, hover + keyboard) ────────────────────── */
+/* ── tooltip: a light annotation panel ───────────────────────── */
 
 export function Tooltip({ children, label }: { children: ReactNode; label: string }) {
   return (
     <span className="group/tip relative inline-flex align-middle" tabIndex={0} role="note">
       {children}
       <span
-        className="pointer-events-none invisible absolute left-0 top-[calc(100%+6px)] z-50 w-[min(22rem,70vw)]
-                   rounded-sm bg-ink px-3 py-2 font-sans text-sm leading-snug font-normal
-                   text-paper opacity-0 shadow-lg transition-opacity duration-100
+        className="pointer-events-none invisible absolute left-0 top-[calc(100%+6px)] z-50 w-[min(23rem,72vw)]
+                   border border-rule-strong bg-surface px-3 py-2 font-sans text-sm font-normal leading-snug
+                   text-ink opacity-0 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.28)] transition-opacity duration-100
                    group-hover/tip:visible group-hover/tip:opacity-100
                    group-focus/tip:visible group-focus/tip:opacity-100"
       >
@@ -195,10 +180,10 @@ export function Disclosure({
       >
         <svg
           viewBox="0 0 16 16"
-          className="size-3 shrink-0 transition-transform group-open/disc:rotate-90"
+          className="size-3 shrink-0 text-ink-faint transition-transform group-open/disc:rotate-90"
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.6"
+          strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden="true"
@@ -238,17 +223,11 @@ export function Table({
   );
 }
 
-export function Th({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export function Th({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <th
       className={cx(
-        "label sticky top-11 z-10 border-b border-rule-strong bg-paper pb-1.5 pr-3 pt-1.5 text-left align-bottom",
+        "label sticky top-11 z-10 border-b border-rule bg-paper py-2 pr-4 text-left align-bottom font-normal",
         className
       )}
     >
@@ -269,7 +248,7 @@ export function Td({
   return (
     <td
       className={cx(
-        "border-b border-rule py-1.5 pr-3 align-top break-words [overflow-wrap:anywhere]",
+        "border-b border-rule py-2 pr-4 align-top break-words [overflow-wrap:anywhere]",
         mono && "font-mono text-sm",
         className
       )}
@@ -290,11 +269,11 @@ export function Stat({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-/* ── code block ──────────────────────────────────────────────── */
+/* ── code ────────────────────────────────────────────────────── */
 
 export function CodeBlock({ children }: { children: string }) {
   return (
-    <pre className="overflow-x-auto rounded-sm border border-rule bg-sunken p-3 font-mono text-sm leading-relaxed whitespace-pre-wrap break-all">
+    <pre className="overflow-x-auto border border-rule bg-sunken p-3 font-mono text-sm leading-relaxed whitespace-pre-wrap break-all">
       {children}
     </pre>
   );

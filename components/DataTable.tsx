@@ -109,16 +109,16 @@ export function DataTable({ rows, hideEmpty }: { rows: Row[]; hideEmpty?: boolea
 export function SectionBlock({ section, hideEmpty }: { section: Section; hideEmpty?: boolean }) {
   const missing = section.rows.filter((r) => isUnreported(r.v)).length;
   return (
-    <section id={section.id} className="mb-8">
-      <div className="flex items-baseline justify-between gap-4 border-b border-ink pb-1">
-        <h3 className="text-base font-semibold tracking-tight">{section.title}</h3>
-        <span className="label shrink-0 tabular">
+    <section id={section.id} className="mb-10">
+      <div className="flex items-baseline justify-between gap-4">
+        <h5 className="text-base font-semibold tracking-tight">{section.title}</h5>
+        <span className="shrink-0 text-xs text-ink-faint tabular">
           {section.rows.length - missing} reported
-          {missing > 0 && <span className="text-ink-faint"> · {missing} not</span>}
+          {missing > 0 && ` · ${missing} not`}
         </span>
       </div>
       {section.note && (
-        <p className="mt-2 mb-3 max-w-[78ch] text-sm text-ink-muted leading-relaxed">
+        <p className="mt-1.5 mb-3 max-w-[78ch] text-sm leading-relaxed text-ink-muted">
           {section.note}
         </p>
       )}

@@ -26,7 +26,7 @@ import { ThirdParty } from "./ThirdParty";
 import { TrackerPayloads } from "./TrackerPayloads";
 import { TypingBiometrics } from "./TypingBiometrics";
 import { Icon } from "./Icon";
-import { Badge, Button, Card, Label, Switch, cx } from "./ui";
+import { Button, Checkbox, cx } from "./ui";
 
 type Gated = { id: string; label: string; warn?: string; run: () => Promise<Section> };
 
@@ -47,6 +47,30 @@ const GATED: Gated[] = [
   },
 ];
 
+/** Highlights whichever part of the document is currently on screen. */
+function useScrollSpy(ids: string[]) {
+  const [active, setActive] = useState<string>("");
+  useEffect(() => {
+    const seen = new Map<string, number>();
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) seen.set(e.target.id, e.intersectionRatio);
+        const best = [...seen.entries()]
+          .filter(([, r]) => r > 0)
+          .sort((a, b) => b[1] - a[1])[0];
+        if (best) setActive(best[0]);
+      },
+      { rootMargin: "-72px 0px -60% 0px", threshold: [0, 0.2, 0.6] }
+    );
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) obs.observe(el);
+    }
+    return () => obs.disconnect();
+  }, [ids]);
+  return active;
+}
+
 export function ClientProbe({
   serverSections,
   probeKey,
@@ -60,7 +84,6 @@ export function ClientProbe({
   const [collectedAt, setCollectedAt] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const [hideEmpty, setHideEmpty] = useState(false);
-  const [view, setView] = useState<"findings" | "everything">("findings");
   const [tick, setTick] = useState(0);
 
   const collect = useCallback(async () => {
@@ -79,26 +102,10 @@ export function ClientProbe({
     void collect();
   }, [collect]);
 
-  // The interaction counters are live, so re-read them on a slow interval.
+  // The interaction counters keep running, so re-read them on a slow interval.
   useEffect(() => {
     const i = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(i);
-  }, []);
-
-  // Evidence links point into the raw tables, which may be filtered out of the
-  // current view — switch to them first, then jump.
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      const link = (e.target as HTMLElement)?.closest?.("a");
-      const href = link?.getAttribute("href");
-      if (!href?.startsWith("#") || href === "#plain") return;
-      setView("everything");
-      requestAnimationFrame(() => {
-        document.getElementById(href.slice(1))?.scrollIntoView({ block: "start" });
-      });
-    };
-    document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
   }, []);
 
   const addSection = useCallback((s: Section) => {
@@ -116,7 +123,7 @@ export function ClientProbe({
   };
 
   const all = useMemo(() => {
-    void tick; // re-materialise live rows on each tick
+    void tick; // re-materialise the live rows on each tick
     const merged = sortSections([...serverSections, ...sections, ...extra]);
     return merged.map((s) =>
       s.id === "interaction" ? { ...s, rows: liveInteractionRows() } : s
@@ -129,6 +136,12 @@ export function ClientProbe({
     (n, s) => n + s.rows.filter((r) => !isUnreported(r.v)).length,
     0
   );
+
+  const navIds = useMemo(
+    () => ["plain", ...CATEGORIES.map((c) => `cat-${c.id}`)],
+    []
+  );
+  const active = useScrollSpy(navIds);
 
   const asJSON = () => ({
     collectedAt,
@@ -160,43 +173,47 @@ export function ClientProbe({
     URL.revokeObjectURL(url);
   };
 
+  const dateline = [
+    { label: "Findings", value: findings.length },
+    { label: "Details observed", value: reported.toLocaleString() },
+    { label: "Fields checked", value: fieldCount.toLocaleString() },
+    { label: "Tables", value: all.length },
+    { label: "Collected in", value: elapsed ? `${elapsed.toFixed(0)} ms` : "…" },
+    { label: "At", value: collectedAt || "…" },
+  ];
+
   return (
     <>
       <CssProbe probeKey={probeKey} onResult={addSection} />
 
-      {/* sticky command bar */}
-      <div className="sticky top-0 z-40 -mx-4 mb-8 border-b border-rule bg-paper/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6">
-        <div className="mx-auto flex max-w-page flex-wrap items-center gap-x-6 gap-y-2">
-          <span className="text-sm font-semibold tracking-tight">Session Context</span>
-          <span className="text-sm text-ink-muted tabular">
-            {findings.length} findings · {reported} details · {all.length} sections
-            {elapsed > 0 && ` · ${elapsed.toFixed(0)} ms`}
-          </span>
-          <div className="flex rounded-sm border border-rule-strong">
-            {(["findings", "everything"] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setView(v)}
-                className={cx(
-                  "px-2.5 py-1 text-sm transition-colors first:border-r first:border-rule-strong",
-                  view === v ? "bg-ink text-paper" : "text-ink-muted hover:bg-sunken"
-                )}
-              >
-                {v === "findings" ? "Findings" : "Everything"}
-              </button>
-            ))}
+      {/* dateline: the scale of the thing, stated once */}
+      <dl className="grid grid-cols-2 gap-x-8 gap-y-4 border-b border-rule py-4 sm:grid-cols-3 lg:grid-cols-6">
+        {dateline.map((d) => (
+          <div key={d.label}>
+            <dt className="label">{d.label}</dt>
+            <dd className="mt-0.5 text-base tabular">{d.value}</dd>
           </div>
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            <Button onClick={() => void collect()} disabled={busy !== null}>
+        ))}
+      </dl>
+
+      {/* sticky bar: where you are, and what you can do about it */}
+      <div className="sticky top-0 z-40 -mx-4 mb-10 border-b border-rule bg-paper/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6">
+        <div className="mx-auto flex max-w-page items-center gap-4">
+          <span className="truncate text-sm text-ink-muted">
+            {active === "plain" || !active
+              ? "In plain English"
+              : CATEGORIES.find((c) => `cat-${c.id}` === active)?.title ?? "Session context"}
+          </span>
+          <div className="ml-auto flex items-center gap-1">
+            <Button variant="quiet" onClick={() => void collect()} disabled={busy !== null}>
               <Icon name="refresh" className="size-3.5" />
               {busy === "collect" ? "Collecting…" : "Re-collect"}
             </Button>
-            <Button onClick={copyJSON} disabled={!sections.length}>
+            <Button variant="quiet" onClick={copyJSON} disabled={!sections.length}>
               <Icon name="copy" className="size-3.5" />
               Copy JSON
             </Button>
-            <Button onClick={downloadJSON} disabled={!sections.length}>
+            <Button variant="quiet" onClick={downloadJSON} disabled={!sections.length}>
               <Icon name="download" className="size-3.5" />
               Download
             </Button>
@@ -204,92 +221,111 @@ export function ClientProbe({
         </div>
       </div>
 
-      {/* permission shelf */}
-      <Card tone="raised" className="mb-8 p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Icon name="key" className="size-4 text-ink-muted" />
-          <span className="text-sm font-medium">Everything above this line needed no permission.</span>
-          <span className="text-sm text-ink-muted">
-            These require your explicit approval — nothing runs until you press one:
-          </span>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {GATED.map((g) => (
-            <Button key={g.id} onClick={() => void runGated(g)} disabled={busy !== null}>
-              {busy === g.id ? "waiting…" : g.label}
-              {g.warn && <Badge tone="quiet">intrusive</Badge>}
-            </Button>
-          ))}
-        </div>
-      </Card>
-
-      <div className="lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-10">
+      <div className="lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
         {/* contents rail */}
-        <nav className="mb-8 lg:sticky lg:top-16 lg:mb-0 lg:self-start">
-          <Label className="mb-2">Contents</Label>
-          <ul className="space-y-3 text-sm">
+        <nav className="mb-10 lg:sticky lg:top-14 lg:mb-0 lg:self-start">
+          <div className="label mb-2 border-b border-rule pb-1.5">Contents</div>
+          <ul className="space-y-1 text-sm">
             <li>
-              <a href="#plain" className="font-medium no-underline hover:underline">
+              <a
+                href="#plain"
+                className={cx(
+                  "block py-0.5 no-underline hover:text-ink",
+                  active === "plain" ? "font-medium text-ink" : "text-ink-muted"
+                )}
+              >
                 In plain English
               </a>
             </li>
-            {view === "everything" &&
-              CATEGORIES.map((c) => {
+            {CATEGORIES.map((c) => {
               const present = all.filter((s) => s.group === c.title);
               if (!present.length) return null;
+              const on = active === `cat-${c.id}`;
               return (
                 <li key={c.id}>
                   <a
                     href={`#cat-${c.id}`}
-                    className="flex items-start gap-1.5 font-medium no-underline hover:underline"
+                    className={cx(
+                      "flex items-baseline gap-2 py-0.5 no-underline hover:text-ink",
+                      on ? "font-medium text-ink" : "text-ink-muted"
+                    )}
                   >
-                    <Icon name={c.icon} className="mt-0.5 size-3.5 shrink-0 text-ink-faint" />
-                    {c.title}
+                    <span className="flex-1">{c.title}</span>
+                    <span className="text-xs text-ink-faint tabular">{present.length}</span>
                   </a>
-                  <span className="ml-5 text-xs text-ink-faint tabular">
-                    {present.length} tables
-                  </span>
+                  {on && (
+                    <ul className="mb-1 ml-0 border-l border-rule pl-3">
+                      {present.map((s) => (
+                        <li key={s.id}>
+                          <a
+                            href={`#${s.id}`}
+                            className="block py-0.5 text-sm text-ink-muted no-underline hover:text-ink"
+                          >
+                            {s.title}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </li>
               );
             })}
-            {view === "findings" && (
-              <li className="text-sm text-ink-faint">
-                Switch to “Everything” for the {all.length} raw tables.
-              </li>
-            )}
           </ul>
         </nav>
 
         <div className="min-w-0">
-          <section id="plain" className="mb-12">
-            <h2 className="mb-1 text-2xl font-semibold tracking-tight">In plain English</h2>
-            <p className="mb-6 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
-              What this page worked out about you, in the order it matters. Each
-              card expands to the exact values behind it.
+          {/* plain English */}
+          <section id="plain" className="mb-14">
+            <h2 className="text-xl font-semibold tracking-tight">In plain English</h2>
+            <p className="mt-1 mb-8 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
+              What this page worked out about you, in the order it matters. Every
+              statement expands to the exact values it came from.
             </p>
             <Findings findings={findings} groups={FINDING_GROUPS} />
+
+            <div className="mt-10 border-t border-rule pt-5">
+              <h3 className="text-base font-medium">Try it yourself</h3>
+              <p className="mt-1 mb-4 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
+                One measurement needs your participation. The result appears in
+                place, below the box.
+              </p>
+              <TypingBiometrics onResult={addSection} />
+            </div>
           </section>
 
-          <section className="mb-12">
-            <h2 className="mb-1 text-2xl font-semibold tracking-tight">Try it yourself</h2>
-            <p className="mb-4 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
-              One demonstration needs your participation.
+          {/* the boundary that actually matters */}
+          <section className="mb-14 border-y border-rule py-5">
+            <h2 className="text-base font-medium">
+              Everything above this point needed no permission.
+            </h2>
+            <p className="mt-1 mb-4 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
+              Not one prompt was shown, and nothing you did granted consent. These
+              are the capabilities that do ask first — press one to see what a
+              single approval hands over.
             </p>
-            <TypingBiometrics onResult={addSection} />
+            <div className="flex flex-wrap gap-2">
+              {GATED.map((g) => (
+                <Button key={g.id} onClick={() => void runGated(g)} disabled={busy !== null}>
+                  {busy === g.id ? "waiting…" : g.label}
+                  {g.warn && <span className="text-xs text-ink-faint">intrusive</span>}
+                </Button>
+              ))}
+            </div>
           </section>
 
-          <section hidden={view === "findings"}>
-            <div className="mb-4 border-t-2 border-ink pt-3">
-              <h2 className="text-2xl font-semibold tracking-tight">Every detail, as collected</h2>
-              <p className="mt-1 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
-                The summary above is derived from these tables. Field names carry
-                a definition where one helps; anything your browser withheld is
-                greyed out.
+          {/* raw data */}
+          <section>
+            <div className="mb-10">
+              <h2 className="text-xl font-semibold tracking-tight">Every detail, as collected</h2>
+              <p className="mt-1 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
+                The findings above are derived from these {all.length} tables.
+                Field names carry a definition where one helps; anything your
+                browser withheld is greyed out.
               </p>
               <div className="mt-3">
-                <Switch checked={hideEmpty} onChange={setHideEmpty}>
+                <Checkbox checked={hideEmpty} onChange={setHideEmpty}>
                   Hide the {fieldCount - reported} fields that were not reported
-                </Switch>
+                </Checkbox>
               </div>
             </div>
 
@@ -298,14 +334,16 @@ export function ClientProbe({
               const isIdentity = c.id === "identity";
               if (!present.length && !isIdentity) return null;
               return (
-                <div key={c.id} id={`cat-${c.id}`} className="mb-14">
-                  <h3 className="flex items-center gap-2 border-b-2 border-ink pb-2 text-xl font-semibold tracking-tight">
-                    <Icon name={c.icon} className="size-4 text-ink-muted" />
-                    {c.title}
-                  </h3>
-                  <p className="mt-2 mb-6 max-w-[76ch] text-sm leading-relaxed text-ink-muted">
-                    {c.blurb}
-                  </p>
+                <div key={c.id} id={`cat-${c.id}`} className="mb-16">
+                  <div className="mb-8 border-b border-ink pb-2">
+                    <h3 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+                      <Icon name={c.icon} className="size-4 text-ink-muted" />
+                      {c.title}
+                    </h3>
+                    <p className="mt-1.5 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
+                      {c.blurb}
+                    </p>
+                  </div>
 
                   {c.subgroups.map((sg) => {
                     const inSub = present.filter((s) => s.subgroup === sg.title);
@@ -313,10 +351,8 @@ export function ClientProbe({
                     const hasFrame = sg.ids.includes("third-party");
                     if (!inSub.length && !hasTrackers && !hasFrame) return null;
                     return (
-                      <div key={sg.title} className="mb-8">
-                        <h4 className={cx("mb-4 text-base font-medium text-ink-muted")}>
-                          {sg.title}
-                        </h4>
+                      <div key={sg.title} className="mb-10">
+                        <h4 className="label mb-5">{sg.title}</h4>
                         {inSub.map((s) => (
                           <SectionBlock key={s.id} section={s} hideEmpty={hideEmpty} />
                         ))}

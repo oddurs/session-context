@@ -20,7 +20,7 @@ export function SiteHeader({
   ] as const;
 
   return (
-    <header className="border-b-2 border-ink pt-10 pb-4">
+    <header className="border-b border-ink pt-10 pb-5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">Session Context</h1>
         <nav className="flex items-center gap-5 text-sm">
