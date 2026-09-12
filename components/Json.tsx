@@ -54,7 +54,7 @@ export function Json({ value, dense }: { value: unknown; dense?: boolean }) {
       <pre
         className={cx(
           "overflow-x-auto whitespace-pre font-mono text-sm leading-relaxed",
-          !dense && "border border-rule bg-sunken p-3"
+          !dense && "rounded-md border border-rule bg-sunken p-3"
         )}
       >
         <code>

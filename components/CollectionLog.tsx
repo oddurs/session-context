@@ -42,12 +42,12 @@ function Line({
           {label}
         </span>
         {fields !== undefined && (
-          <span className="shrink-0 font-mono text-sm tabular text-ink-faint motion-safe:animate-[rise-in_200ms_ease-out]">
+          <span className="shrink-0 whitespace-nowrap font-mono text-sm tabular text-ink-faint motion-safe:animate-[rise-in_200ms_ease-out]">
             {fields.toLocaleString()} fields
           </span>
         )}
         {at !== undefined && (
-          <span className="w-16 shrink-0 text-right font-mono text-sm tabular text-ink-faint motion-safe:animate-[rise-in_200ms_ease-out]">
+          <span className="w-[4.75rem] shrink-0 whitespace-nowrap text-right font-mono text-sm tabular text-ink-faint motion-safe:animate-[rise-in_200ms_ease-out]">
             {Math.round(at)} ms
           </span>
         )}

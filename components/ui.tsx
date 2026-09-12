@@ -25,7 +25,7 @@ export function Card({
   return (
     <div
       className={cx(
-        "border border-rule",
+        "rounded-md border border-rule",
         tone === "raised" ? "bg-raised" : "bg-surface",
         className
       )}
@@ -91,10 +91,18 @@ export function Badge({
 /* ── button: hairline outline or plain text, never filled ────── */
 
 const BUTTON_VARIANTS = {
-  default:
-    "border border-rule-strong px-2.5 py-1 text-ink hover:bg-sunken disabled:border-rule disabled:text-ink-faint disabled:hover:bg-transparent",
-  quiet:
-    "border border-transparent px-1.5 py-1 text-ink-muted hover:text-ink hover:underline disabled:text-ink-faint disabled:no-underline",
+  default: [
+    "rounded-md border border-rule-strong px-2.5 py-1 text-ink",
+    "hover:border-ink hover:bg-sunken",
+    "active:bg-rule/40",
+    "disabled:border-rule disabled:text-ink-faint disabled:hover:border-rule disabled:hover:bg-transparent",
+  ].join(" "),
+  quiet: [
+    "rounded-md px-1.5 py-1 text-ink-muted",
+    "hover:bg-sunken hover:text-ink",
+    "active:bg-rule/40",
+    "disabled:text-ink-faint disabled:hover:bg-transparent disabled:hover:text-ink-faint",
+  ].join(" "),
 };
 
 export function Button({
@@ -123,7 +131,9 @@ export function Button({
       onClick={onClick}
       disabled={disabled}
       className={cx(
-        "inline-flex items-center gap-1.5 bg-transparent text-sm transition-colors disabled:cursor-not-allowed",
+        "inline-flex items-center gap-1.5 bg-transparent text-sm",
+        "transition-[color,background-color,border-color] duration-150 ease-out",
+        "disabled:cursor-not-allowed",
         BUTTON_VARIANTS[variant],
         className
       )}
@@ -179,8 +189,9 @@ export function Menu({
           setOpen((v) => !v);
         }}
         className={cx(
-          "inline-flex items-center gap-1.5 border border-transparent px-1.5 py-1 text-sm transition-colors",
-          open ? "text-ink" : "text-ink-muted hover:text-ink"
+          "inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm",
+          "transition-[color,background-color] duration-150 ease-out",
+          open ? "bg-sunken text-ink" : "text-ink-muted hover:bg-sunken hover:text-ink"
         )}
       >
         {label}
@@ -201,9 +212,12 @@ export function Menu({
       {open && (
         <div
           role="menu"
+          // The same treatment as the tooltip: a hairline, a hint of radius,
+          // and the one soft lift in the system. Nothing that reads as a card.
           className={cx(
-            "absolute top-[calc(100%+6px)] z-50 min-w-[13rem] border border-rule-strong bg-surface py-1",
-            "shadow-[0_6px_20px_-8px_rgb(0_0_0/0.28)] motion-safe:animate-[rise-in_140ms_ease-out]",
+            "absolute top-[calc(100%+7px)] z-50 min-w-[13rem] rounded-md border border-rule-strong",
+            "bg-surface py-1 shadow-[var(--shadow-pop)]",
+            "motion-safe:animate-[rise-in_140ms_ease-out]",
             align === "right" ? "right-0" : "left-0"
           )}
         >
@@ -229,7 +243,7 @@ export function MenuItem({
       type="button"
       role="menuitem"
       onClick={onSelect}
-      className="flex w-full items-baseline gap-4 px-3 py-1.5 text-left text-sm text-ink hover:bg-sunken"
+      className="flex w-full items-baseline gap-5 px-3 py-1.5 text-left text-sm text-ink transition-colors duration-100 hover:bg-sunken"
     >
       <span className="flex-1">{children}</span>
       {hint && <span className="font-mono text-xs text-ink-faint">{hint}</span>}
@@ -249,13 +263,14 @@ export function Checkbox({
   children: ReactNode;
 }) {
   return (
-    <label className="inline-flex cursor-pointer select-none items-center gap-2 text-sm text-ink-muted hover:text-ink">
+    <label className="group/check inline-flex cursor-pointer select-none items-center gap-2 text-sm text-ink-muted transition-colors duration-150 hover:text-ink">
       {/* The mark is always present and only changes opacity, so checking it
           cannot shift the baseline. */}
       <span
         className={cx(
-          "relative grid size-3.5 shrink-0 place-items-center border leading-none transition-colors",
-          checked ? "border-ink" : "border-rule-strong"
+          "relative grid size-3.5 shrink-0 place-items-center rounded-[2px] border leading-none",
+          "transition-[border-color,background-color] duration-150 ease-out",
+          checked ? "border-ink bg-ink/[0.04]" : "border-rule-strong group-hover/check:border-ink-muted"
         )}
       >
         <input
@@ -269,7 +284,7 @@ export function Checkbox({
           className={cx("size-2.5 transition-opacity", checked ? "opacity-100" : "opacity-0")}
           fill="none"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth="1.75"
           aria-hidden="true"
         >
           <path d="M2.5 6.2 4.8 8.5 9.5 3.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -332,7 +347,7 @@ export function Disclosure({
       >
         <svg
           viewBox="0 0 16 16"
-          className="size-3 shrink-0 text-ink-faint transition-transform group-open/disc:rotate-90"
+          className="size-3 shrink-0 text-ink-faint transition-transform duration-200 ease-out group-open/disc:rotate-90"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.5"
@@ -425,7 +440,7 @@ export function Stat({ label, value }: { label: string; value: ReactNode }) {
 
 export function CodeBlock({ children }: { children: string }) {
   return (
-    <pre className="overflow-x-auto border border-rule bg-sunken p-3 font-mono text-sm leading-relaxed whitespace-pre">
+    <pre className="overflow-x-auto rounded-md border border-rule bg-sunken p-3 font-mono text-sm leading-relaxed whitespace-pre">
       {children}
     </pre>
   );

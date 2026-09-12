@@ -49,7 +49,7 @@ export function Identifiability() {
               <div className="flex items-baseline gap-3">
                 <span className="flex-1 text-sm font-medium">{e.signal}</span>
                 <span className="text-xs text-ink-faint">{STANDING_LABEL[e.standing]}</span>
-                <span className="w-16 shrink-0 text-right font-mono text-sm tabular">
+                <span className="w-[4.75rem] shrink-0 whitespace-nowrap text-right font-mono text-sm tabular">
                   {bits.toFixed(1)} bits
                 </span>
               </div>

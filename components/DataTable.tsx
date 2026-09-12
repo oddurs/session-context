@@ -104,7 +104,7 @@ export function DataTable({
         {visible.map((r, i) => {
           const empty = isUnreported(r.v);
           return (
-            <tr key={`${r.k}-${i}`} className="align-top hover:bg-sunken/70">
+            <tr key={`${r.k}-${i}`} className="align-top transition-colors duration-100 hover:bg-sunken/60">
               <Td
                 mono
                 className={cx("break-words", empty ? "text-ink-faint" : "text-ink-muted")}

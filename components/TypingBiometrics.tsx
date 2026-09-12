@@ -154,8 +154,9 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
       <div
         onClick={() => input.current?.focus()}
         className={cx(
-          "mt-4 cursor-text border p-4 text-lg leading-relaxed transition-colors",
-          focused ? "border-ink" : "border-rule-strong"
+          "mt-4 cursor-text rounded-md border p-4 text-lg leading-relaxed",
+          "transition-[border-color,box-shadow] duration-150 ease-out",
+          focused ? "border-ink shadow-[0_0_0_3px_rgb(22_22_15/0.05)]" : "border-rule-strong hover:border-ink-muted"
         )}
       >
         {[...PHRASE].map((char, i) => {
@@ -170,7 +171,12 @@ export function TypingBiometrics({ onResult }: { onResult: (s: Section) => void 
                 state === "pending" && "text-ink-faint",
                 state === "correct" && "text-ink",
                 state === "wrong" && "text-ink underline decoration-2 underline-offset-4",
-                focused && i === typed.length && "border-l border-ink"
+                // The caret is drawn beside the character rather than as a
+                // border on it: a border adds a pixel of width and nudges the
+                // whole line the moment focus lands.
+                focused &&
+                  i === typed.length &&
+                  "before:absolute before:inset-y-0 before:-left-px before:w-px before:bg-ink before:content-['']"
               )}
             >
               {char}
