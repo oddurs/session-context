@@ -38,6 +38,9 @@ const str = (v: unknown) => (v == null ? undefined : String(v));
 const plural = (count: unknown, noun: string) =>
   `${count} ${noun}${Number(count) === 1 ? "" : "s"}`;
 
+/** True when a sentence about this count needs a singular verb. */
+const isOne = (count: unknown) => Number(count) === 1;
+
 /** True when a value is present and not one of our "nothing here" markers. */
 function has(v: unknown): boolean {
   if (v == null || v === "") return false;
@@ -371,7 +374,9 @@ export function deriveFindings(sections: Section[]): Finding[] {
     {
       id: "f-fonts",
       group: "The machine in front of you",
-      headline: `${fonts} of the fonts this page tested for are installed on your system.`,
+      headline: isOne(fonts)
+        ? "One of the fonts this page tested for is installed on your system."
+        : `${fonts} of the fonts this page tested for are installed on your system.`,
       detail:
         "No permission was asked. Text was drawn off-screen and measured. Installed fonts follow the software you use, so the set is close to a list of what you have installed.",
       how: "Read by script",
@@ -672,7 +677,9 @@ export function deriveFindings(sections: Section[]): Finding[] {
     {
       id: "f-localfonts",
       group: "What you handed over",
-      headline: `You handed over all ${localFonts} fonts installed on your system.`,
+      headline: isOne(localFonts)
+        ? "You handed over the one font installed on your system."
+        : `You handed over all ${localFonts} fonts installed on your system.`,
       detail:
         "Not an estimate this time: the real list, straight from the operating system. It reveals the software you own and, for many people, is unique on its own.",
       how: "You granted this",
@@ -690,7 +697,9 @@ export function deriveFindings(sections: Section[]): Finding[] {
     {
       id: "f-screens",
       group: "What you handed over",
-      headline: `All ${plural(screens, "display")} attached to this machine are now visible.`,
+      headline: isOne(screens)
+        ? "The display attached to this machine is now visible."
+        : `All ${plural(screens, "display")} attached to this machine are now visible.`,
       detail:
         "Including their arrangement on your desk, their resolutions and their manufacturer labels — a fair description of your workspace.",
       how: "You granted this",
@@ -778,7 +787,9 @@ export function deriveFindings(sections: Section[]): Finding[] {
     {
       id: "f-nojs",
       group: "Who you are",
-      headline: `Turning off JavaScript would not stop this: ${cssHits} facts came from CSS alone.`,
+      headline: isOne(cssHits)
+        ? "Turning off JavaScript would not stop this: one fact came from CSS alone."
+        : `Turning off JavaScript would not stop this: ${cssHits} facts came from CSS alone.`,
       detail:
         "A style rule can request an image only when its condition is true. One rule per condition turns the pattern of image requests into your color scheme, screen density, window size, input device, accessibility settings and browser engine. Blocking scripts changes none of it, and one rule fires specifically when scripting is off.",
       how: "Sent automatically",
@@ -827,7 +838,9 @@ export function deriveFindings(sections: Section[]): Finding[] {
       group: "What you did on this page",
       headline:
         Number(tabs) > 0
-          ? `You have ${tabs} other tab${Number(tabs) === 1 ? "" : "s"} of this site open.`
+          ? isOne(tabs)
+            ? "You have one other tab of this site open."
+            : `You have ${tabs} other tabs of this site open.`
           : "Tabs of this site can see and talk to each other.",
       detail:
         "Pages of the same site share a broadcast channel, so anything learned in one tab is instantly available in all of them — and the number of tabs you keep open is itself a habit that describes you.",
@@ -847,7 +860,9 @@ export function deriveFindings(sections: Section[]): Finding[] {
     add({
       id: "f-apps",
       group: "What you handed over",
-      headline: `${apps.length} desktop application${apps.length === 1 ? "" : "s"} on this machine responded.`,
+      headline: isOne(apps.length)
+        ? "One desktop application on this machine responded."
+        : `${apps.length} desktop applications on this machine responded.`,
       detail:
         "A web page asked your browser to open each application's private URL scheme and watched which answered. The software you install is not something the web is supposed to see.",
       how: "You granted this",
