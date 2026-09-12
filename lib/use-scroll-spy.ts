@@ -30,7 +30,11 @@ export function useScrollSpy(ids: string[]) {
     // Pure arithmetic on cached numbers: no layout is read here.
     const pick = () => {
       frame = 0;
-      const y = window.scrollY + 96;
+      const offset = parseInt(
+        getComputedStyle(document.documentElement).getPropertyValue("--nav-offset") || "58",
+        10
+      );
+      const y = window.scrollY + offset + 24;
       let current = offsets.current[0]?.id ?? "";
       for (const entry of offsets.current) {
         if (entry.top <= y) current = entry.id;

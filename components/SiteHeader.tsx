@@ -10,7 +10,8 @@ export function SiteHeader({
   lede,
   note,
 }: {
-  current: "data" | "methods";
+  /** "none" for pages that are reachable only by URL, such as the design notes */
+  current: "data" | "methods" | "none";
   title: string;
   lede: string;
   note?: string;

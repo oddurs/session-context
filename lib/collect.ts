@@ -1272,8 +1272,6 @@ export async function collectAll(
     workerSection(),
     systemUISection(),
     mediaCapabilitiesSection(),
-    benchmarkSection(),
-    thermalSection(),
   ]);
   report("heavy", "Fingerprinting graphics, audio and performance", [...immediate, ...quick, ...heavy]);
 
@@ -1281,6 +1279,17 @@ export async function collectAll(
   const all = [...immediate, ...quick, ...heavy, ...fp];
   report("identity", "Reducing it all to one identifier", all);
   return sortSections(all);
+}
+
+/**
+ * Measurements that exist by burning processor time: a benchmark and a
+ * sustained-load test. They tell the page how fast the machine is, and there
+ * is no reason for the findings to wait on them, so they run once the page has
+ * already resolved and fill themselves in.
+ */
+export async function collectDeferred(): Promise<Section[]> {
+  const sections = await settle([benchmarkSection(), thermalSection()]);
+  return sortSections(sections);
 }
 
 /**

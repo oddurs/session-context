@@ -3,7 +3,7 @@
 import type { Phase } from "@/lib/collect";
 import { Disclosure, cx } from "./ui";
 
-const PENDING = [
+const PASSES = [
   { id: "immediate", label: "Reading the browser, screen and document" },
   { id: "quick", label: "Storage, network, devices and permissions" },
   { id: "heavy", label: "Fingerprinting graphics, audio and performance" },
@@ -22,34 +22,48 @@ function Line({
   state: "done" | "running" | "waiting";
 }) {
   return (
-    <li
-      className={cx(
-        "flex items-baseline gap-3 border-t border-rule py-1.5 first:border-t-0",
-        state === "waiting" && "text-ink-faint",
-        state === "running" && "text-ink",
-        state === "done" && "text-ink-muted"
-      )}
-    >
-      <span
+    <li className="border-t border-rule py-2 first:border-t-0">
+      <div className="flex items-baseline gap-3">
+        <span
+          aria-hidden
+          className={cx(
+            "mt-[0.3rem] size-1.5 shrink-0 rounded-full transition-colors duration-300",
+            state === "done" && "bg-ink-muted",
+            state === "running" && "bg-ink",
+            state === "waiting" && "bg-rule-strong"
+          )}
+        />
+        <span
+          className={cx(
+            "flex-1 text-sm transition-colors duration-300",
+            state === "waiting" ? "text-ink-faint" : "text-ink"
+          )}
+        >
+          {label}
+        </span>
+        {fields !== undefined && (
+          <span className="shrink-0 font-mono text-sm tabular text-ink-faint motion-safe:animate-[rise-in_200ms_ease-out]">
+            {fields.toLocaleString()} fields
+          </span>
+        )}
+        {at !== undefined && (
+          <span className="w-16 shrink-0 text-right font-mono text-sm tabular text-ink-faint motion-safe:animate-[rise-in_200ms_ease-out]">
+            {Math.round(at)} ms
+          </span>
+        )}
+      </div>
+
+      {/* The running pass gets a moving hairline: something is happening, and
+          how long it will take is genuinely unknown. */}
+      <div
         aria-hidden
         className={cx(
-          "mt-[0.35rem] size-1.5 shrink-0 rounded-full",
-          state === "done" && "bg-ink-muted",
-          state === "running" && "bg-ink motion-safe:animate-pulse",
-          state === "waiting" && "bg-rule-strong"
+          "mt-1.5 ml-[0.6rem] h-px overflow-hidden transition-opacity duration-300",
+          state === "running" ? "bg-rule opacity-100" : "opacity-0"
         )}
-      />
-      <span className="flex-1 text-sm">{label}</span>
-      {fields !== undefined && (
-        <span className="shrink-0 font-mono text-sm tabular text-ink-faint">
-          {fields.toLocaleString()} fields
-        </span>
-      )}
-      {at !== undefined && (
-        <span className="w-16 shrink-0 text-right font-mono text-sm tabular text-ink-faint">
-          {Math.round(at)} ms
-        </span>
-      )}
+      >
+        <div className="h-px w-1/5 bg-ink animate-[sweep_1.4s_ease-in-out_infinite]" />
+      </div>
     </li>
   );
 }
@@ -59,26 +73,26 @@ function Line({
  * it is doing to you while it does it.
  */
 export function CollectionLog({ phases }: { phases: Phase[] }) {
-  const doneIds = new Set(phases.map((p) => p.id));
-  const next = PENDING.find((p) => !doneIds.has(p.id));
+  const done = new Set(phases.map((p) => p.id));
+  const next = PASSES.find((p) => !done.has(p.id));
 
   return (
     <section aria-live="polite" aria-label="Collection progress">
       <h3 className="text-base font-medium">Collecting</h3>
-      <p className="mt-1 mb-4 max-w-[70ch] text-sm leading-relaxed text-ink-muted">
+      <p className="mt-1 mb-3 max-w-[70ch] text-sm leading-relaxed text-ink-muted">
         None of this asks your permission. The findings appear as soon as the
         last pass lands.
       </p>
       <ul className="max-w-[72ch]">
-        {PENDING.map((p) => {
-          const done = phases.find((x) => x.id === p.id);
+        {PASSES.map((p) => {
+          const finished = phases.find((x) => x.id === p.id);
           return (
             <Line
               key={p.id}
               label={p.label}
-              at={done?.at}
-              fields={done?.fields}
-              state={done ? "done" : p.id === next?.id ? "running" : "waiting"}
+              at={finished?.at}
+              fields={finished?.fields}
+              state={finished ? "done" : p.id === next?.id ? "running" : "waiting"}
             />
           );
         })}

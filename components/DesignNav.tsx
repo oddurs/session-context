@@ -2,22 +2,27 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef } from "react";
-import { METHOD_GROUPS } from "@/lib/methods";
 import { useScrollSpy } from "@/lib/use-scroll-spy";
 import { useAnchorScroll } from "@/lib/use-anchor-scroll";
 import { useMediaQuery } from "@/lib/use-client-value";
 import { cx } from "./ui";
 
-const NAV_ITEMS = [
-  ...METHOD_GROUPS.map((g) => ({ id: g.id, title: g.title, icon: g.icon, count: g.methods.length })),
-  { id: "declined", title: "Deliberately not built", icon: "shield" as const, count: 5 },
+export const DESIGN_SECTIONS = [
+  { id: "principles", title: "Principles" },
+  { id: "color", title: "Ink and paper" },
+  { id: "type", title: "Type" },
+  { id: "rules", title: "Rules and spacing" },
+  { id: "primitives", title: "Primitives" },
+  { id: "tables", title: "Tables" },
+  { id: "motion", title: "Motion" },
+  { id: "icons", title: "Icons" },
+  { id: "voice", title: "Voice" },
 ];
 
-/** Sticky bar naming where you are, mirroring the data page. */
-export function MethodsBar() {
-  const ids = useMemo(() => NAV_ITEMS.map((i) => i.id), []);
+export function DesignBar() {
+  const ids = useMemo(() => DESIGN_SECTIONS.map((s) => s.id), []);
   const active = useScrollSpy(ids);
-  const current = NAV_ITEMS.find((i) => i.id === active);
+  const current = DESIGN_SECTIONS.find((s) => s.id === active);
 
   return (
     <div className="sticky top-0 z-40 -mx-4 mb-10 border-b border-rule bg-paper px-4 py-2 sm:-mx-6 sm:px-6">
@@ -28,22 +33,21 @@ export function MethodsBar() {
           onClick={() => scrollTo({ top: 0 })}
           className="truncate text-left text-sm text-ink-muted hover:text-ink"
         >
-          {current?.title ?? "Methods"}
+          {current?.title ?? "Design"}
         </button>
         <Link
           href="/"
           className="ml-auto shrink-0 text-sm text-ink-muted no-underline hover:text-ink hover:underline"
         >
-          See it run on your own browser →
+          See the system in use →
         </Link>
       </div>
     </div>
   );
 }
 
-/** Contents rail: beside the text on wide screens, collapsed above it below. */
-export function MethodsContents() {
-  const ids = useMemo(() => NAV_ITEMS.map((i) => i.id), []);
+export function DesignContents() {
+  const ids = useMemo(() => DESIGN_SECTIONS.map((s) => s.id), []);
   const active = useScrollSpy(ids);
   useAnchorScroll();
   const isWide = useMediaQuery("(min-width: 1024px)", true);
@@ -58,22 +62,21 @@ export function MethodsContents() {
       <details ref={toc}>
         <summary className="label flex cursor-pointer list-none items-center justify-between border-b border-rule pb-1.5 lg:pointer-events-none">
           Contents
-          <span className="text-ink-faint lg:hidden">{NAV_ITEMS.length} sections</span>
+          <span className="text-ink-faint lg:hidden">{DESIGN_SECTIONS.length} sections</span>
         </summary>
         <ul className="mt-2 space-y-1 text-sm">
-          {NAV_ITEMS.map((item) => (
-            <li key={item.id}>
+          {DESIGN_SECTIONS.map((s) => (
+            <li key={s.id}>
               <a
-                href={`#${item.id}`}
+                href={`#${s.id}`}
                 className={cx(
-                  "flex items-baseline gap-2 border-l py-0.5 pl-3 no-underline transition-colors hover:text-ink",
-                  active === item.id
+                  "block border-l py-0.5 pl-3 no-underline transition-colors hover:text-ink",
+                  active === s.id
                     ? "border-ink font-medium text-ink"
                     : "border-transparent text-ink-muted"
                 )}
               >
-                <span className="flex-1">{item.title}</span>
-                <span className="text-xs text-ink-faint tabular">{item.count}</span>
+                {s.title}
               </a>
             </li>
           ))}

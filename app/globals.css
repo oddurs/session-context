@@ -48,6 +48,9 @@
   --radius-md: 3px;
 
   --container-page: 1080px;
+
+  /* Height of the sticky bar, plus a little air. Anchors clear it by this. */
+  --nav-offset: 58px;
 }
 
 @layer base {
@@ -101,7 +104,7 @@
   }
   /* Section anchors clear the sticky header */
   [id] {
-    scroll-margin-top: 72px;
+    scroll-margin-top: var(--nav-offset);
   }
 }
 
@@ -184,6 +187,9 @@
    */
   .defer-render {
     content-visibility: auto;
+    /* Overridden per section with a height derived from its row count: a flat
+       guess makes anchors land far from their target, because the browser
+       scrolls using the estimate and then everything reflows. */
     contain-intrinsic-size: auto 640px;
   }
 }
@@ -194,5 +200,46 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+/* ── motion, used sparingly and only where it explains something ── */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A short segment sweeping a hairline: work is happening, duration unknown. */
+@keyframes sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(500%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes rise-in {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes sweep {
+    0%,
+    100% {
+      transform: translateX(150%);
+    }
   }
 }

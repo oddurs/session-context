@@ -141,10 +141,25 @@ export function DataTable({
   );
 }
 
+/** Roughly how tall a section will be, so deferred rendering does not lie. */
+function estimateHeight(section: Section, hideEmpty?: boolean) {
+  const rows = hideEmpty
+    ? section.rows.filter((r) => !isUnreported(r.v)).length
+    : section.rows.length;
+  const heading = 32;
+  const note = section.note ? Math.ceil(section.note.length / 90) * 22 + 12 : 0;
+  const table = 34 + rows * 33;
+  return heading + note + table + 40;
+}
+
 function SectionBlockBase({ section, hideEmpty }: { section: Section; hideEmpty?: boolean }) {
   const missing = section.rows.filter((r) => isUnreported(r.v)).length;
   return (
-    <section id={section.id} className="defer-render mb-10">
+    <section
+      id={section.id}
+      className="defer-render mb-10"
+      style={{ containIntrinsicSize: `auto ${estimateHeight(section, hideEmpty)}px` }}
+    >
       <div className="flex items-baseline justify-between gap-4">
         <h5 className="flex items-baseline gap-2 text-base font-semibold tracking-tight">
           {section.title}

@@ -47,15 +47,30 @@ function Evidence({ f }: { f: Finding }) {
  * Findings read as a document: one column, hairline separators, hierarchy from
  * type rather than boxes.
  */
-export function Findings({ findings, groups }: { findings: Finding[]; groups: string[] }) {
+export function Findings({
+  findings,
+  groups,
+  stagger,
+}: {
+  findings: Finding[];
+  groups: string[];
+  /** let the groups resolve in sequence rather than all at once */
+  stagger?: boolean;
+}) {
   if (!findings.length) return null;
+  // Only groups that have findings are drawn, so the delay counts those.
+  const present = groups.filter((g) => findings.some((f) => f.group === g));
   return (
     <div>
-      {groups.map((g) => {
+      {present.map((g, index) => {
         const items = findings.filter((f) => f.group === g);
         if (!items.length) return null;
         return (
-          <section key={g} className="mt-12 first:mt-0">
+          <section
+            key={g}
+            className="mt-12 first:mt-0 motion-safe:animate-[rise-in_260ms_ease-out] motion-safe:[animation-fill-mode:backwards]"
+            style={stagger ? { animationDelay: `${index * 55}ms` } : undefined}
+          >
             <RuleHeading as="h3" className="mb-1">
               <Icon name={ICON_FOR_GROUP[g] ?? "info"} className="size-4 text-ink-faint" />
               {g}

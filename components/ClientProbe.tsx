@@ -5,6 +5,7 @@ import type { Section } from "@/lib/types";
 import type { Phase } from "@/lib/collect";
 import {
   collectAll,
+  collectDeferred,
   liveCheapSections,
   liveEventSections,
   liveSection,
@@ -17,6 +18,7 @@ import { applyLive, watchLive } from "@/lib/live";
 import { loadNotes, scheduleNotesLoad } from "@/lib/notes";
 import { useMediaQuery } from "@/lib/use-client-value";
 import { useScrollSpy } from "@/lib/use-scroll-spy";
+import { useAnchorScroll } from "@/lib/use-anchor-scroll";
 import {
   probeClipboard,
   probeIdle,
@@ -115,9 +117,9 @@ export function ClientProbe({
     setRevealed(false);
     const t0 = performance.now();
 
-    // A slow machine should not stare at a log forever: show whatever has
-    // landed after a few seconds and let the rest arrive underneath.
-    const guard = setTimeout(() => setRevealed(true), 4000);
+    // Only for pathological cases: the page normally resolves in about a
+    // second and a half, so this should never fire.
+    const guard = setTimeout(() => setRevealed(true), 10_000);
 
     try {
       const s = await collectAll((sections, phase) => {
@@ -128,6 +130,12 @@ export function ClientProbe({
       setElapsed(performance.now() - t0);
       setCollectedAt(new Date().toLocaleTimeString());
       setRevealed(true);
+
+      // The processor measurements land afterwards, into a page that is
+      // already readable.
+      void collectDeferred().then((extra) =>
+        setSections((prev) => sortSections([...prev, ...extra]))
+      );
     } catch (e) {
       setError((e as Error).message);
       setRevealed(true);
@@ -242,6 +250,7 @@ export function ClientProbe({
     return ids;
   }, [all]);
   const activeId = useScrollSpy(navIds);
+  useAnchorScroll();
 
   // Which category the active anchor belongs to.
   const activeCategory = useMemo(() => {
