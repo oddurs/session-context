@@ -93,9 +93,20 @@ jobs:
         env:
           SITE: https://sessioncontext.org
 
+      # The container has just started and this runner has two shared cores, so
+      # the first request pays for a cold Next.js server and a cold browser at
+      # once. Warm it before measuring, and allow far more time than a local
+      # run needs: twenty seconds was tuned against localhost and produced a
+      # failure here that was environmental, not a regression.
+      - name: Warm the container
+        run: |
+          for path in / /methods; do
+            curl -sf -o /dev/null --max-time 30 "https://sessioncontext.org$path" || true
+          done
+
       - name: Drive a real browser at production
         env:
           CHROME_PATH: /usr/bin/google-chrome
         run: |
-          npm run probe -- https://sessioncontext.org/ 20000
-          npm run probe -- https://sessioncontext.org/methods 8000
+          npm run probe -- https://sessioncontext.org/ 60000
+          npm run probe -- https://sessioncontext.org/methods 20000

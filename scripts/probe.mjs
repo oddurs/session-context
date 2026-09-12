@@ -104,10 +104,29 @@ async function run(wsUrl) {
   const path = new URL(URL_).pathname;
   const minimum =
     path === "/" ? { findings: 20, tables: 30, rows: 600 } : { tables: 5, rows: 0, findings: 0 };
+  let short = false;
   for (const [key, floor] of Object.entries(minimum)) {
     if (Number(counts[key]) < floor) {
       problems += 1;
+      short = true;
       console.error(`  expected at least ${floor} ${key}, found ${counts[key]}`);
     }
+  }
+
+  // A count that came up short says nothing about why. Ask the page what state
+  // it is actually in: whether React attached at all, whether collection was
+  // still running, which passes had landed, and whether it recorded an error.
+  // Without this a failure here is a guess, and it was.
+  if (short) {
+    const state = await evaluate(`JSON.stringify({
+      hydrated: [...document.querySelectorAll('*')].slice(0, 300)
+        .some(el => Object.keys(el).some(k => k.startsWith('__react'))),
+      revealed: !document.querySelector('#plain')?.innerText.includes('None of this asks your permission'),
+      phases: [...document.querySelectorAll('#plain li')].map(li => li.innerText.split('\\n')[0]).slice(0, 6),
+      failure: document.querySelector('#plain')?.innerText.match(/Collection failed[^]{0,160}/)?.[0] ?? null,
+      readyState: document.readyState,
+      scripts: document.querySelectorAll('script').length,
+    })`);
+    console.error(`  page state: ${state}`);
   }
 }
