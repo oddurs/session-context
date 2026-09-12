@@ -12,6 +12,11 @@ npm start        # production build, same port
 npm run build
 ```
 
+Deployment is Railway, from `main`: the custom server is the reason — no
+platform that runs Next.js in its own serverless runtime can report the
+connection-level facts below. `/api/health` is the healthcheck, and reports
+which commit is live.
+
 `server.mjs` is a custom Node server, not `next start`. It exists for one
 reason: the page reports connection-level facts the framework cannot see — raw
 header order, HTTP version, socket details — which it injects as `x-dm-*`
@@ -95,6 +100,19 @@ most of this code does nothing under SSR:
 npm run probe                      # drives headless Chrome against localhost:3939
 npm run probe -- <url> <wait-ms>   # exits non-zero on any console error
 ```
+
+All three routes are worth driving — `/`, `/methods` and `/design`. CI runs the
+same probe against a built server, and after a push to `main` runs it once more
+against production, waiting for `/api/health` to report the pushed commit so it
+cannot pass against the build it is replacing.
+
+**Firefox and the dev server.** `npm run dev` serves a page that renders and
+then never hydrates in Firefox: no build error, no console error, no uncaught
+exception, and every chunk loads. Production is unaffected, so check anything
+Firefox-related against `npm start`. Ruled out already, each by testing: CSP (a
+wide-open dev policy changes nothing), Turbopack (webpack dev fails the same
+way), script delivery, and errors of every kind over forty seconds. The cause
+is still unknown.
 
 A gated probe must never report a refusal that did not happen. `granted`,
 `denied`, `unsupported` and `error` are four different facts about the reader,

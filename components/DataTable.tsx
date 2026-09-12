@@ -62,15 +62,25 @@ function Value({ v }: { v: unknown }) {
 function Term({
   field,
   sectionId,
+  reveal,
   children,
 }: {
   field: string;
   sectionId?: string;
+  /** Print the definition rather than hiding it behind a pointer. */
+  reveal?: boolean;
   children: string;
 }) {
   const lookup = useFieldNotes();
   const def = lookup?.(field, sectionId);
   if (!def) return <>{children}</>;
+  if (reveal)
+    return (
+      <>
+        {children}
+        <span className="mt-hair block font-sans text-sm text-ink-faint">{def}</span>
+      </>
+    );
   return (
     <Tooltip label={def} wrap>
       <span className="underline decoration-rule decoration-dotted underline-offset-[3px] transition-colors duration-150 hover:decoration-ink">
@@ -83,11 +93,13 @@ function Term({
 export function DataTable({
   rows,
   hideEmpty,
+  showDefinitions,
   sectionId,
   caption,
 }: {
   rows: Row[];
   hideEmpty?: boolean;
+  showDefinitions?: boolean;
   sectionId?: string;
   caption?: string;
 }) {
@@ -113,7 +125,7 @@ export function DataTable({
               className="align-top transition-colors duration-100 hover:bg-sunken/60"
             >
               <Td mono className={cx("break-words", empty ? "text-ink-faint" : "text-ink-muted")}>
-                <Term field={r.k} sectionId={sectionId}>
+                <Term field={r.k} sectionId={sectionId} reveal={showDefinitions}>
                   {r.k}
                 </Term>
               </Td>
@@ -153,7 +165,15 @@ function estimateHeight(section: Section, hideEmpty?: boolean) {
   return heading + note + table + 40;
 }
 
-function SectionBlockBase({ section, hideEmpty }: { section: Section; hideEmpty?: boolean }) {
+function SectionBlockBase({
+  section,
+  hideEmpty,
+  showDefinitions,
+}: {
+  section: Section;
+  hideEmpty?: boolean;
+  showDefinitions?: boolean;
+}) {
   const missing = section.rows.filter((r) => isUnreported(r.v)).length;
   return (
     <section
@@ -191,6 +211,7 @@ function SectionBlockBase({ section, hideEmpty }: { section: Section; hideEmpty?
       <DataTable
         rows={section.rows}
         hideEmpty={hideEmpty}
+        showDefinitions={showDefinitions}
         sectionId={section.id}
         caption={section.title}
       />

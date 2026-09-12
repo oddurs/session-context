@@ -105,6 +105,7 @@ export function ClientProbe({
   const [collectedAt, setCollectedAt] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const [hideEmpty, setHideEmpty] = useState(false);
+  const [showDefinitions, setShowDefinitions] = useState(false);
   const [live, setLive] = useState<Section[]>([]);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [revealed, setRevealed] = useState(false);
@@ -531,9 +532,18 @@ export function ClientProbe({
                 Field names carry a definition where one helps; anything your
                 browser withheld is grayed out.
               </p>
-              <div className="mt-body">
+              <div className="mt-body flex flex-wrap gap-x-group gap-y-tight">
                 <Checkbox checked={hideEmpty} onChange={setHideEmpty}>
                   Hide the {fieldCount - reported} fields that were not reported
+                </Checkbox>
+                {/*
+                  * The definitions are otherwise reachable only by pointer:
+                  * making seven hundred field names focusable would bury every
+                  * real control in the tab order, so the way to read them
+                  * without a mouse is to print them.
+                  */}
+                <Checkbox checked={showDefinitions} onChange={setShowDefinitions}>
+                  Print every field definition
                 </Checkbox>
               </div>
             </div>
@@ -571,7 +581,12 @@ export function ClientProbe({
                       <div key={sg.title} className="mt-group first:mt-0">
                         <RuleHeading className="mb-body">{sg.title}</RuleHeading>
                         {inSub.map((s) => (
-                          <SectionBlock key={s.id} section={s} hideEmpty={hideEmpty} />
+                          <SectionBlock
+                            key={s.id}
+                            section={s}
+                            hideEmpty={hideEmpty}
+                            showDefinitions={showDefinitions}
+                          />
                         ))}
                         {hasFrame && <ThirdParty onResult={addSection} />}
                         {hasTrackers && <TrackerPayloads sections={all} />}

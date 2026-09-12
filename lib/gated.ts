@@ -311,9 +311,6 @@ export const CAPABILITIES: GatedCapability[] = [
   },
 ];
 
-/** How many entries appear after the rule, set apart from the rest. */
-export const INTRUSIVE_COUNT = CAPABILITIES.filter((c) => c.intrusive).length;
-
 /* ── the resting state, read without prompting ───────────────── */
 
 export type RestingState = "granted" | "blocked" | "unasked" | "unsupported" | "unknown";

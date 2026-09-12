@@ -1076,7 +1076,7 @@ const live = {
   path: [] as { x: number; y: number; t: number }[],
 };
 
-export function installLiveListeners() {
+function installLiveListeners() {
   if (live.installed) return;
   live.installed = true;
   addEventListener("pointermove", (e) => {
@@ -1143,7 +1143,7 @@ export function mouseDynamics() {
 }
 
 /** Current values of the live counters, re-read on every render tick. */
-export function liveInteractionRows(): Row[] {
+function liveInteractionRows(): Row[] {
   const d = mouseDynamics();
   return [
     { k: "pointermove events", v: live.pointerMoves },

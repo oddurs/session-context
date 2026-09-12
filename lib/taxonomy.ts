@@ -114,9 +114,3 @@ export const ICON_FOR_GROUP: Record<string, IconName> = {
   "What you did on this page": "eye",
   "What you handed over": "key",
 };
-
-export const HOW_ICON: Record<string, IconName> = {
-  "Sent automatically": "send",
-  "Read by script": "code",
-  "You granted this": "key",
-};

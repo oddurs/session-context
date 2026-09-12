@@ -439,17 +439,6 @@ export function Td({
   );
 }
 
-/* ── stat ────────────────────────────────────────────────────── */
-
-export function Stat({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div>
-      <Label>{label}</Label>
-      <div className="mt-hair font-mono text-base tabular">{value}</div>
-    </div>
-  );
-}
-
 /* ── code ────────────────────────────────────────────────────── */
 
 export function CodeBlock({ children }: { children: string }) {
