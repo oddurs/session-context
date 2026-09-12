@@ -407,7 +407,7 @@ export function ClientProbe({
                       on ? "border-ink font-medium text-ink" : "border-transparent text-ink-muted"
                     )}
                   >
-                    <span className="flex-1">{c.title}</span>
+                    <span className="flex-1">{c.short}</span>
                     <span className="text-xs text-ink-faint tabular">{present.length}</span>
                   </a>
                   {on && (

@@ -4,6 +4,8 @@ export type Subgroup = { title: string; blurb?: string; ids: string[] };
 export type Category = {
   id: string;
   title: string;
+  /** A rail is a margin, not a sentence: the index uses these. */
+  short: string;
   icon: IconName;
   blurb: string;
   subgroups: Subgroup[];
@@ -13,6 +15,7 @@ export type Category = {
 export const CATEGORIES: Category[] = [
   {
     id: "server",
+    short: "Before any code",
     title: "Known before any code runs",
     icon: "server",
     blurb:
@@ -25,6 +28,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     id: "identity",
+    short: "Recognizability",
     title: "How recognizable you are",
     icon: "fingerprint",
     blurb:
@@ -39,6 +43,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     id: "browser",
+    short: "Browser",
     title: "Your browser",
     icon: "browser",
     blurb:
@@ -51,6 +56,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     id: "device",
+    short: "Device",
     title: "The machine in front of you",
     icon: "chip",
     blurb:
@@ -64,6 +70,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     id: "session",
+    short: "Settings & visit",
     title: "Your settings and this visit",
     icon: "sliders",
     blurb:
@@ -76,6 +83,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     id: "granted",
+    short: "Permission",
     title: "Unlocked by permission",
     icon: "key",
     blurb:

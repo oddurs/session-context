@@ -262,3 +262,31 @@
     }
   }
 }
+
+/* ── the mark ────────────────────────────────────────────────── */
+/*
+ * A sheen crosses the fingerprint every nine seconds and is gone in under
+ * two. Long enough apart to feel like light rather than animation.
+ */
+@keyframes logo-sheen {
+  0% {
+    transform: translateX(-40px);
+  }
+  16% {
+    transform: translateX(78px);
+  }
+  100% {
+    transform: translateX(78px);
+  }
+}
+
+.logo-sheen {
+  animation: logo-sheen 9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-sheen {
+    animation: none;
+    opacity: 0;
+  }
+}

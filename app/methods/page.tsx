@@ -1,6 +1,7 @@
-import { DECLINED, METHOD_GROUPS } from "@/lib/methods";
+import { CATALOGUE, DECLINED, METHOD_GROUPS } from "@/lib/methods";
 import { SiteHeader } from "@/components/SiteHeader";
-import { MethodsBar, MethodsContents } from "@/components/MethodsNav";
+import { MethodsBar } from "@/components/MethodsNav";
+import { MethodsSummary } from "@/components/MethodsSummary";
 import { MethodEntry } from "@/components/MethodEntry";
 import { Icon } from "@/components/Icon";
 import { RuleHeading } from "@/components/ui";
@@ -54,11 +55,16 @@ export default function MethodsPage() {
 
       <MethodsBar />
 
-      <div className="lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
-        <MethodsContents />
+      {/*
+        * No index rail: this is a catalogue rather than a record, and its
+        * index is the table above, which carries information a list of links
+        * could not. The column is measured for reading instead.
+        */}
+      <MethodsSummary />
 
-        <div className="min-w-0">
-          {METHOD_GROUPS.map((g) => (
+      <div>
+        <div className="min-w-0 max-w-[80ch]">
+          {CATALOGUE.map((g) => (
             <section key={g.id} id={g.id} className="mt-12 first:mt-0">
               <RuleHeading as="h2" className="mb-2">
                 <Icon name={g.icon} className="size-4 text-ink-faint" />

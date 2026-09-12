@@ -390,3 +390,33 @@ export const DECLINED: { name: string; why: string }[] = [
     why: "Turning an address into a city means sending it to a third-party database. Every value on this page is computed locally, and that rule was worth keeping.",
   },
 ];
+
+/** Stable anchor for a technique, shared by the index and the entry. */
+export function slug(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+export type NumberedMethod = Method & { number: number; slug: string };
+
+/**
+ * The catalogue, numbered once.
+ *
+ * The index and the entries both need a stable number per technique, and
+ * counting during render is both a lint error and a bug waiting to happen when
+ * the two lists disagree.
+ */
+export const CATALOGUE: (Omit<MethodGroup, "methods"> & { methods: NumberedMethod[] })[] =
+  (() => {
+    let n = 0;
+    return METHOD_GROUPS.map((group) => ({
+      ...group,
+      methods: group.methods.map((method) => ({
+        ...method,
+        number: (n += 1),
+        slug: slug(method.name),
+      })),
+    }));
+  })();
