@@ -55,11 +55,29 @@ const PERMISSIONS_POLICY = [
   .map((f) => `${f}=(self)`)
   .join(", ");
 
+/** Canonical host, so the www alias does not become a second copy of the site. */
+const CANONICAL_HOST = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://sessioncontext.org")
+  .replace(/^https?:\/\//, "")
+  .replace(/\/$/, "");
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
   productionBrowserSourceMaps: false,
+  async redirects() {
+    return [
+      {
+        // Every canonical URL, the sitemap and the Open Graph tags point at the
+        // bare domain, so the alias sends visitors there rather than serving a
+        // duplicate.
+        source: "/:path*",
+        has: [{ type: "host", value: `www.${CANONICAL_HOST}` }],
+        destination: `https://${CANONICAL_HOST}/:path*`,
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
