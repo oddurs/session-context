@@ -302,8 +302,16 @@ async function networkSection(): Promise<Section> {
     note: "Connection quality is reported by the Network Information API (Chromium). Local IPs are gathered by asking WebRTC for ICE candidates — browsers now usually return an mDNS placeholder instead of the real LAN address.",
     rows: [
       { k: "navigator.onLine", v: probe(() => navigator.onLine) },
-      { k: "connection.effectiveType", v: probe(() => c?.effectiveType) },
-      { k: "connection.type", v: probe(() => c?.type) },
+      {
+        k: "connection.effectiveType",
+        v: probe(() => c?.effectiveType),
+        n: "a speed class timed from your own requests — slow-2g, 2g, 3g, 4g — where 4g is the fastest. Not the medium you are on",
+      },
+      {
+        k: "connection.type",
+        v: probe(() => c?.type),
+        n: "the actual medium — wifi, cellular, ethernet. Chromium withholds it on the desktop",
+      },
       { k: "connection.downlink", v: probe(() => (c?.downlink != null ? `${c.downlink} Mb/s` : undefined)) },
       { k: "connection.downlinkMax", v: probe(() => c?.downlinkMax) },
       { k: "connection.rtt", v: probe(() => (c?.rtt != null ? `${c.rtt} ms` : undefined)) },

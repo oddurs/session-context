@@ -352,7 +352,7 @@ export const FIELD_NOTES: Record<string, string> = {
 
   /* ── Network ──────────────────────────────────────────────── */
   "navigator.online": "Whether a network interface is up. It does not mean the internet is reachable.",
-  "connection.effectivetype": "The connection class inferred from observed performance: slow-2g through 4g.",
+  "connection.effectivetype": "A speed class, not a medium. The browser times your requests and files the result under slow-2g, 2g, 3g or 4g. 4g is the fastest of the four, and it says nothing about whether you are on wi-fi or a phone network.",
   "connection.type": "The physical connection type where the browser exposes it, such as wifi or cellular.",
   "connection.downlink": "Estimated bandwidth in megabits per second, rounded for privacy.",
   "connection.downlinkmax": "Theoretical maximum for the underlying technology, rarely populated.",
