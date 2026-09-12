@@ -93,13 +93,15 @@ export function Badge({
 
 const BUTTON_VARIANTS = {
   default: [
-    "rounded-md border border-rule-strong px-2.5 py-1 text-ink",
+    "rounded-md border border-rule-strong px-2.5 py-1 pointer-coarse:px-3 pointer-coarse:py-2 text-ink",
     "hover:border-ink hover:bg-sunken",
     "active:bg-rule/40",
     "disabled:border-rule disabled:text-ink-faint disabled:hover:border-rule disabled:hover:bg-transparent",
   ].join(" "),
   quiet: [
-    "rounded-md px-1.5 py-1 text-ink-muted",
+    // An icon alone is 26x22 to a cursor, which is right, and far too small
+    // for a thumb. The glyph does not change size; the box around it does.
+    "rounded-md px-1.5 py-1 pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:justify-center text-ink-muted",
     "hover:bg-sunken hover:text-ink",
     "active:bg-rule/40",
     "disabled:text-ink-faint disabled:hover:bg-transparent disabled:hover:text-ink-faint",
@@ -190,7 +192,7 @@ export function Menu({
           setOpen((v) => !v);
         }}
         className={cx(
-          "inline-flex items-center gap-hair rounded-md px-1.5 py-1 text-sm",
+          "inline-flex items-center gap-hair rounded-md px-1.5 py-1 pointer-coarse:px-2.5 pointer-coarse:py-2.5 text-sm",
           "transition-[color,background-color] duration-150 ease-out",
           open ? "bg-sunken text-ink" : "text-ink-muted hover:bg-sunken hover:text-ink"
         )}

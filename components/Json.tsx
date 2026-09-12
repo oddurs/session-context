@@ -10,6 +10,22 @@ import { MoreToggle, cx } from "./ui";
  */
 const COLLAPSED_LINES = 12;
 
+/**
+ * One value can be longer than a whole document: FingerprintJS reports its
+ * canvas as a base64 data URI, and at a hundred thousand characters that line
+ * laid out a hundred thousand pixels wide inside a horizontally scrolling
+ * block. Nobody reads a base64 PNG, and this site does not scroll sideways —
+ * so a string past this length is cut and counted instead.
+ */
+const LONGEST_VALUE = 160;
+
+const shorten = (line: string) =>
+  line.replace(/"(?:\\.|[^"\\])*"/g, (match) =>
+    match.length > LONGEST_VALUE
+      ? `${match.slice(0, LONGEST_VALUE)}…" and ${(match.length - LONGEST_VALUE).toLocaleString()} more characters`
+      : match
+  );
+
 function tokenize(line: string) {
   // Split into strings, numbers/keywords and everything else.
   const parts = line.split(/("(?:\\.|[^"\\])*"(?:\s*:)?|\b-?\d+\.?\d*(?:e[+-]?\d+)?\b|\btrue\b|\bfalse\b|\bnull\b)/gi);
@@ -45,7 +61,7 @@ export function Json({ value, dense }: { value: unknown; dense?: boolean }) {
 
   const text =
     typeof value === "string" ? value : JSON.stringify(value, null, 2) ?? String(value);
-  const lines = text.split("\n");
+  const lines = text.split("\n").map(shorten);
   const truncated = !open && lines.length > COLLAPSED_LINES;
   const shown = truncated ? lines.slice(0, COLLAPSED_LINES) : lines;
 
@@ -53,7 +69,7 @@ export function Json({ value, dense }: { value: unknown; dense?: boolean }) {
     <>
       <pre
         className={cx(
-          "overflow-x-auto whitespace-pre font-mono text-sm",
+          "whitespace-pre-wrap [overflow-wrap:anywhere] font-mono text-sm",
           !dense && "rounded-md border border-rule bg-sunken p-3"
         )}
       >

@@ -33,7 +33,7 @@ export function SiteHeader({
           <Logo className="h-8 w-auto shrink-0" />
           Session Context
         </Link>
-        <nav className="flex items-center gap-body text-sm">
+        <nav className="flex items-center gap-body text-sm pointer-coarse:-my-1.5 pointer-coarse:[&_a]:py-1.5">
           {tabs.map((t) => (
             <Link
               key={t.id}
