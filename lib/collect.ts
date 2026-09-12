@@ -1202,9 +1202,37 @@ async function settle(jobs: Promise<Section>[]): Promise<Section[]> {
   );
 }
 
+/** A named stage of collection, reported as it completes. */
+export type Phase = {
+  id: string;
+  /** what this pass was doing, in the page's own voice */
+  label: string;
+  /** milliseconds from the start of collection */
+  at: number;
+  /** fields known once this pass landed */
+  fields: number;
+};
+
+const countFields = (sections: Section[]) =>
+  sections.reduce((n, s) => n + s.rows.length, 0);
+
+/**
+ * Collect in passes, reporting each one as it lands: the cheap probes finish
+ * in a few hundred milliseconds, the expensive ones — graphics, benchmarks,
+ * composite fingerprinting — take rather longer.
+ */
 export async function collectAll(
-  onPartial?: (sections: Section[]) => void
+  onPartial?: (sections: Section[], phase: Phase) => void
 ): Promise<Section[]> {
+  const started = performance.now();
+  const report = (id: string, label: string, sections: Section[]) =>
+    onPartial?.(sortSections(sections), {
+      id,
+      label,
+      at: performance.now() - started,
+      fields: countFields(sections),
+    });
+
   installLiveListeners();
 
   const immediate = [
@@ -1221,7 +1249,7 @@ export async function collectAll(
     interactionSection(),
     tamperSection(),
   ];
-  onPartial?.(sortSections(immediate));
+  report("immediate", "Reading the browser, screen and document", immediate);
 
   const quick = await settle([
     uaParserSection(),
@@ -1235,7 +1263,7 @@ export async function collectAll(
     crossTabSection(),
     privacySection(),
   ]);
-  onPartial?.(sortSections([...immediate, ...quick]));
+  report("quick", "Storage, network, devices and permissions", [...immediate, ...quick]);
 
   const heavy = await settle([
     graphicsSection(),
@@ -1247,10 +1275,12 @@ export async function collectAll(
     benchmarkSection(),
     thermalSection(),
   ]);
-  onPartial?.(sortSections([...immediate, ...quick, ...heavy]));
+  report("heavy", "Fingerprinting graphics, audio and performance", [...immediate, ...quick, ...heavy]);
 
   const fp = await fingerprintSections().catch(() => []);
-  return sortSections([...immediate, ...quick, ...heavy, ...fp]);
+  const all = [...immediate, ...quick, ...heavy, ...fp];
+  report("identity", "Reducing it all to one identifier", all);
+  return sortSections(all);
 }
 
 /**

@@ -187,3 +187,12 @@
     contain-intrinsic-size: auto 640px;
   }
 }
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

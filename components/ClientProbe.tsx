@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Section } from "@/lib/types";
+import type { Phase } from "@/lib/collect";
 import {
   collectAll,
   liveCheapSections,
@@ -27,6 +28,7 @@ import { FINDING_GROUPS, GRANTED_GROUP, deriveFindings } from "@/lib/findings";
 import { CATEGORIES } from "@/lib/taxonomy";
 import { SectionBlock, isUnreported } from "./DataTable";
 import { Findings } from "./Findings";
+import { CollectionLog, CollectionReceipt } from "./CollectionLog";
 import { CssProbe } from "./CssProbe";
 import { ThirdParty } from "./ThirdParty";
 import { TrackerPayloads } from "./TrackerPayloads";
@@ -101,20 +103,34 @@ export function ClientProbe({
   const [elapsed, setElapsed] = useState(0);
   const [hideEmpty, setHideEmpty] = useState(false);
   const [live, setLive] = useState<Section[]>([]);
+  const [phases, setPhases] = useState<Phase[]>([]);
+  const [revealed, setRevealed] = useState(false);
 
   const collect = useCallback(async () => {
     setBusy("collect");
     setError(null);
+    setPhases([]);
+    setRevealed(false);
     const t0 = performance.now();
+
+    // A slow machine should not stare at a log forever: show whatever has
+    // landed after a few seconds and let the rest arrive underneath.
+    const guard = setTimeout(() => setRevealed(true), 4000);
+
     try {
-      // Partial results render as they arrive, so the page is never blank.
-      const s = await collectAll(setSections);
+      const s = await collectAll((sections, phase) => {
+        setSections(sections);
+        setPhases((prev) => [...prev.filter((p) => p.id !== phase.id), phase]);
+      });
       setSections(s);
       setElapsed(performance.now() - t0);
       setCollectedAt(new Date().toLocaleTimeString());
+      setRevealed(true);
     } catch (e) {
       setError((e as Error).message);
+      setRevealed(true);
     } finally {
+      clearTimeout(guard);
       setBusy(null);
     }
   }, []);
@@ -208,9 +224,11 @@ export function ClientProbe({
   // it on narrow ones. Set imperatively so a re-render never reopens it.
   const isWide = useMediaQuery("(min-width: 1024px)", true);
   const toc = useRef<HTMLDetailsElement>(null);
+  // The rail only mounts once findings are revealed, so this has to run again
+  // at that point or it opens nothing.
   useEffect(() => {
     if (toc.current) toc.current.open = isWide;
-  }, [isWide]);
+  }, [isWide, revealed]);
 
   const navIds = useMemo(() => {
     const ids = ["plain"];
@@ -265,8 +283,11 @@ export function ClientProbe({
     { label: "Details observed", value: reported.toLocaleString() },
     { label: "Fields checked", value: fieldCount.toLocaleString() },
     { label: "Tables", value: all.length },
-    { label: "Collected in", value: elapsed ? `${elapsed.toFixed(0)} ms` : "…" },
-    { label: "At", value: collectedAt || "…" },
+    {
+      label: "Collected in",
+      value: elapsed ? `${elapsed.toFixed(0)} ms` : phases.length ? `${Math.round(phases[phases.length - 1].at)} ms` : "—",
+    },
+    { label: "At", value: collectedAt || "—" },
   ];
 
   return (
@@ -301,7 +322,9 @@ export function ClientProbe({
             onClick={() => scrollTo({ top: 0 })}
             className="truncate text-left text-sm text-ink-muted hover:text-ink"
           >
-            {activeId === "plain" || !activeId
+            {!revealed
+              ? "Collecting…"
+              : activeId === "plain" || !activeId
               ? "In plain English"
               : [
                   CATEGORIES.find((c) => c.id === activeCategory)?.title,
@@ -329,9 +352,13 @@ export function ClientProbe({
 
       <div className="lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
         {/* contents rail */}
-        <nav aria-label="Contents" className="mb-10 lg:sticky lg:top-14 lg:mb-0 lg:self-start">
+        <nav
+          aria-label="Contents"
+          className={cx("lg:sticky lg:top-14 lg:self-start", revealed && "mb-10 lg:mb-0")}
+        >
           {/* Collapsed on small screens: a full index above the content pushes
               the page itself off the first screen. */}
+          {revealed && (
           <details ref={toc} className="group/toc">
             <summary className="label flex cursor-pointer list-none items-center justify-between border-b border-rule pb-1.5 lg:pointer-events-none">
               Contents
@@ -393,6 +420,7 @@ export function ClientProbe({
             })}
           </ul>
           </details>
+          )}
         </nav>
 
         <div className="min-w-0">
@@ -411,24 +439,16 @@ export function ClientProbe({
                   Try again
                 </Button>
               </div>
-            ) : findings.length === 0 ? (
-              <div aria-busy="true" className="space-y-6">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="border-t border-rule pt-5 first:border-t-0 first:pt-0">
-                    <div className="h-4 w-2/3 animate-pulse bg-sunken" />
-                    <div className="mt-3 h-3 w-full animate-pulse bg-sunken" />
-                    <div className="mt-1.5 h-3 w-5/6 animate-pulse bg-sunken" />
-                  </div>
-                ))}
-                <p className="text-sm text-ink-faint">
-                  Measuring… {all.length} of 40 tables collected so far.
-                </p>
-              </div>
+            ) : !revealed ? (
+              <CollectionLog phases={phases} />
             ) : (
-              <Findings findings={passiveFindings} groups={passiveGroups} />
+              <div className="motion-safe:animate-[fade-in_180ms_ease-out]">
+                <CollectionReceipt phases={phases} elapsed={elapsed} />
+                <Findings findings={passiveFindings} groups={passiveGroups} />
+              </div>
             )}
 
-            <div className="mt-10 border-t border-rule pt-5">
+            <div className={cx("mt-10 border-t border-rule pt-5", !revealed && "hidden")}>
               <h3 className="text-base font-medium">Try it yourself</h3>
               <p className="mt-1 mb-4 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
                 One measurement needs your participation. The result appears in
@@ -439,7 +459,7 @@ export function ClientProbe({
           </section>
 
           {/* the boundary that actually matters */}
-          <section className="mb-14 border-y border-rule py-5">
+          <section className={cx("mb-14 border-y border-rule py-5", !revealed && "hidden")}>
             <h2 className="text-base font-medium">
               Everything above this point needed no permission.
             </h2>
@@ -494,7 +514,7 @@ export function ClientProbe({
           </section>
 
           {/* raw data */}
-          <section>
+          <section className={cx(!revealed && "hidden")}>
             <div className="mb-10">
               <h2 className="text-xl font-semibold tracking-tight">Every detail, as collected</h2>
               <p className="mt-1 max-w-[72ch] text-sm leading-relaxed text-ink-muted">
