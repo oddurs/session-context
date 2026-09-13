@@ -10,7 +10,15 @@ import type { Row, Section } from "./types";
 /** Flatten one FingerprintJS component into a printable value. */
 function comp(v: any): unknown {
   if (v == null) return v;
-  if (Array.isArray(v)) return v.length > 24 ? `${v.slice(0, 24).join(", ")} … (+${v.length - 24})` : v.join(", ");
+  if (Array.isArray(v)) {
+    // Joining an array of objects gives "[object Object], [object Object]",
+    // which is exactly what the plugins component rendered: FingerprintJS
+    // reports it as {name, description, mimeTypes} records, not as names.
+    // Anything holding structure is handed to the JSON renderer instead, which
+    // pretty-prints it and truncates values too long to read.
+    if (v.some((item) => item !== null && typeof item === "object")) return JSON.stringify(v);
+    return v.length > 24 ? `${v.slice(0, 24).join(", ")} … (+${v.length - 24})` : v.join(", ");
+  }
   if (typeof v === "object") return JSON.stringify(v);
   return v;
 }

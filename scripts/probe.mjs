@@ -86,6 +86,25 @@ async function run(wsUrl) {
     return result.result?.value ?? result.exceptionDetails?.text;
   };
 
+  // "[object Object]" is what a structure looks like when something joined or
+  // interpolated it by mistake. It reached production once, in a row a reader
+  // on HN had to point out. Nothing renders it on purpose, so its presence
+  // anywhere on the page is a bug by definition.
+  const stringified = await evaluate(`(() => {
+    const hits = [];
+    document.querySelectorAll('td, dd, p, span').forEach((el) => {
+      if (el.children.length === 0 && el.textContent.includes('[object Object]')) {
+        const row = el.closest('tr');
+        hits.push(row ? row.cells[0].textContent.trim() : el.textContent.trim().slice(0, 40));
+      }
+    });
+    return [...new Set(hits)].slice(0, 8).join(' | ');
+  })()`);
+  if (stringified) {
+    problems += 1;
+    console.error(`  rendered [object Object] in: ${stringified}`);
+  }
+
   const counts = {
     findings: await evaluate("document.querySelectorAll('article').length"),
     tables: await evaluate("document.querySelectorAll('section[id]').length"),

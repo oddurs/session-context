@@ -25,7 +25,20 @@ export async function probeAsync<T>(
   }
 }
 
-export const list = (a: unknown) => (Array.isArray(a) ? a.join(", ") : a);
+/**
+ * Render a list of collected values.
+ *
+ * Joining an array of objects produces "[object Object]" for every entry,
+ * which is how the FingerprintJS plugins row shipped. Anything holding
+ * structure is handed over as JSON instead, and the table renders that as a
+ * collapsible block rather than a lie.
+ */
+export const list = (a: unknown) => {
+  if (!Array.isArray(a)) return a;
+  return a.some((item) => item !== null && typeof item === "object")
+    ? JSON.stringify(a)
+    : a.join(", ");
+};
 
 /**
  * Turn a failed gated call into an honest outcome.
