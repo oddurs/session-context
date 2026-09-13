@@ -69,6 +69,9 @@ export const FINDING_GROUPS = [
   GRANTED_GROUP,
 ];
 
+/** Versions a browser reports to everyone rather than reading from the machine. */
+const FROZEN_OS = /^"?10[._]15[._]7"?$/;
+
 export function deriveFindings(sections: Section[]): Finding[] {
   const ix = index(sections);
   const g = (sec: string, key: string) => ix.get(sec)?.get(key);
@@ -268,14 +271,22 @@ export function deriveFindings(sections: Section[]): Finding[] {
   const gpu = g("graphics", "WebGL 1 · UNMASKED_RENDERER") ?? g("graphics", "WebGL 2 · UNMASKED_RENDERER");
   if (has(gpu)) {
     const chip = /Apple (M\d+[^,)]*)/.exec(String(gpu))?.[1];
+    // Safari hands "Apple GPU" to everyone rather than the driver string, and
+    // that is the whole answer — claiming to name the exact chip while holding
+    // a placeholder was this page asserting something it plainly could not
+    // see. A browser that refuses is the more interesting finding anyway.
+    const masked = /^(apple gpu|generic renderer|unknown)$/i.test(String(gpu).trim());
     add({
       id: "f-gpu",
       group: "The machine in front of you",
-      headline: chip
-        ? `You are using a Mac with an Apple ${chip.trim()} chip.`
-        : "This page can name the exact graphics chip in your computer.",
-      detail:
-        "The graphics driver gives its full name to any page that asks, with no prompt. It names the chip and driver build, which narrows you to a model of computer and roughly what it cost.",
+      headline: masked
+        ? "Your browser refuses to name your graphics chip."
+        : chip
+          ? `You are using a Mac with an Apple ${chip.trim()} chip.`
+          : "This page can name the exact graphics chip in your computer.",
+      detail: masked
+        ? `Most browsers hand over the graphics driver's full name to any page that asks, naming the chip and driver build — enough to narrow you to a model of computer. This one answers "${String(gpu).trim()}" instead, the same string it gives every other visitor. It is one of the few values here that has been deliberately made useless.`
+        : "The graphics driver gives its full name to any page that asks, with no prompt. It names the chip and driver build, which narrows you to a model of computer and roughly what it cost.",
       how: "Read by script",
       sectionId: "graphics",
       evidence: [
@@ -394,9 +405,16 @@ export function deriveFindings(sections: Section[]): Finding[] {
     {
       id: "f-devices",
       group: "The machine in front of you",
-      headline: `Your recording hardware is countable: ${plural(cams, "camera")}, ${plural(g("devices", "audioinput"), "microphone")}, ${plural(g("devices", "audiooutput"), "speaker")}.`,
-      detail:
-        "Counting needs no permission. Names and serial numbers stay hidden until you grant camera or microphone access, but the count alone separates a laptop from a desk setup with a webcam and headset.",
+      headline: `Your recording hardware is countable: ${plural(cams, "camera")} and ${plural(g("devices", "audioinput"), "microphone")}.`,
+      // The speaker count was in this sentence and reported zero on Safari,
+      // which withholds audio outputs until a capture permission is granted.
+      // Zero devices is not the same fact as no devices, and stating it as one
+      // was wrong on every Apple browser.
+      detail: `Counting needs no permission. Names and serial numbers stay hidden until you grant camera or microphone access, but the count alone separates a laptop from a desk setup with a webcam and a headset.${
+        g("devices", "audiooutput") === 0
+          ? " Your speakers are not in that count: this browser withholds audio outputs entirely until a capture permission is granted, so the zero beside them means hidden rather than absent."
+          : ` It also counts ${plural(g("devices", "audiooutput"), "speaker")}.`
+      }`,
       how: "Read by script",
       sectionId: "devices",
       evidence: [
@@ -419,9 +437,15 @@ export function deriveFindings(sections: Section[]): Finding[] {
     {
       id: "f-browser",
       group: "Your browser and settings",
-      headline: `You are running ${bname} ${String(bver).replace(/"/g, "")} on ${osname} ${String(osver).replace(/"/g, "")}.`,
-      detail:
-        "Not just the browser: the exact build, down to the patch. It is volunteered on every request before any script runs, along with your processor architecture. A version left un-updated also says which security holes remain open.",
+      // Safari freezes its platform version at 10.15.7 for every Mac ever
+      // made. Printing that as this machine's operating system was the page
+      // repeating a decoy as fact — and the decoy is the better finding.
+      headline: FROZEN_OS.test(String(osver))
+        ? `You are running ${bname} ${String(bver).replace(/"/g, "")}, on an operating system it will not name.`
+        : `You are running ${bname} ${String(bver).replace(/"/g, "")} on ${osname} ${String(osver).replace(/"/g, "")}.`,
+      detail: FROZEN_OS.test(String(osver))
+        ? `The browser build is exact, down to the patch, and is volunteered on every request before any script runs. The operating system is not: this one reports "${String(osname)} ${String(osver).replace(/"/g, "")}" to every visitor regardless of what they are actually running, which is a deliberate decoy rather than a reading of your machine.`
+        : "Not just the browser: the exact build, down to the patch. It is volunteered on every request before any script runs, along with your processor architecture. Freezing the user-agent string moved this detail into client hints rather than removing it.",
       how: "Sent automatically",
       sectionId: "client-hints",
       evidence: [

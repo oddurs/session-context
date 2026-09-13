@@ -45,6 +45,12 @@ export function middleware(request: NextRequest) {
   // branch, and that is the one worth reading.
   const dev = process.env.NODE_ENV !== "production";
 
+  // Railway terminates TLS and forwards the original scheme; locally there is
+  // no such header and the request is plain http.
+  const secure =
+    request.headers.get("x-forwarded-proto") === "https" ||
+    request.nextUrl.protocol === "https:";
+
   const csp = [
     `default-src 'self'`,
     dev
@@ -66,12 +72,14 @@ export function middleware(request: NextRequest) {
     `base-uri 'self'`,
     `form-action 'self'`,
     `object-src 'none'`,
-    // Only meaningful once the site is actually served over TLS. On a plain
-    // http:// origin it also upgrades the dev server's own ws:// hot-reload
-    // socket to wss://, which nothing is listening on: Chrome exempts loopback
-    // from the upgrade, Firefox does not, so there the dev client could never
-    // connect and the app never hydrated at all.
-    dev ? "" : `upgrade-insecure-requests`,
+    // Only meaningful once the site is actually served over TLS, and actively
+    // harmful before then: on a plain http:// origin it upgrades the page's
+    // own subresources to https, where nothing is listening. Chrome exempts
+    // loopback and Safari and Firefox do not, so `npm start` on localhost
+    // loaded the markup and then never hydrated in either of them. Keyed on
+    // the protocol rather than on NODE_ENV, because the production build run
+    // locally has the same problem as the dev server did.
+    secure ? `upgrade-insecure-requests` : "",
   ]
     .filter(Boolean)
     .join("; ");
