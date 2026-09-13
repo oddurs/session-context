@@ -405,7 +405,20 @@ export function deriveFindings(sections: Section[]): Finding[] {
     {
       id: "f-devices",
       group: "The machine in front of you",
-      headline: `Your recording hardware is countable: ${plural(cams, "camera")} and ${plural(g("devices", "audioinput"), "microphone")}.`,
+      // enumerateDevices reports nothing at all in some browsers until a
+      // capture permission exists, so a count of zero is not the same claim as
+      // "you do not have one". Only what was actually counted is named.
+      headline: (() => {
+        const counted = [
+          [cams, "camera"],
+          [g("devices", "audioinput"), "microphone"],
+        ].filter(([n]) => typeof n === "number" && n > 0) as [number, string][];
+        return counted.length
+          ? `Your recording hardware is countable: ${counted
+              .map(([n, word]) => plural(n, word))
+              .join(" and ")}.`
+          : "This browser will not say what recording hardware you have.";
+      })(),
       // The speaker count was in this sentence and reported zero on Safari,
       // which withholds audio outputs until a capture permission is granted.
       // Zero devices is not the same fact as no devices, and stating it as one
@@ -460,13 +473,21 @@ export function deriveFindings(sections: Section[]): Finding[] {
   );
 
   const headerOrder = g("connection", "raw header order");
+  const proxied = str(g("server-derived", "behind a proxy")) === "yes";
   add(
     {
       id: "f-headers",
       group: "Your browser and settings",
-      headline: "Even if you faked your browser identity, the giveaway is the order.",
-      detail:
-        "Every browser sends its request headers in its own fixed order. Changing the user-agent string does not change that order, so a site can tell what you really are regardless of what you claim. The same holds at the network layer below this one.",
+      // Behind a hosting proxy the order shown is the proxy's, not the
+      // browser's — this deployment re-emits them alphabetically. The
+      // connection table said so all along while this headline claimed the
+      // order gave the reader away.
+      headline: proxied
+        ? "Your header order would give you away, but this site never sees it."
+        : "Even if you faked your browser identity, the giveaway is the order.",
+      detail: proxied
+        ? "Every browser sends its request headers in its own fixed order, and changing the user-agent string does not change it, so the order alone says which engine you really are. You cannot see yours here: this deployment sits behind a hosting proxy that receives your request and sends its own, in its own order. What the table below shows is the proxy's ordering. Run the site with nothing in front of it and the same table shows your browser's."
+        : "Every browser sends its request headers in its own fixed order. Changing the user-agent string does not change that order, so a site can tell what you really are regardless of what you claim.",
       how: "Sent automatically",
       sectionId: "connection",
       evidence: [
@@ -508,10 +529,10 @@ export function deriveFindings(sections: Section[]): Finding[] {
       group: "Your browser and settings",
       headline: a11yOn
         ? "Your accessibility settings are turned on, and they are visible here."
-        : "You have no accessibility settings turned on.",
+        : "None of the accessibility preferences a page can read are turned on.",
       detail: a11yOn
         ? "Preferences like reduced motion, increased contrast or forced colors are shared with every site so pages can adapt. They are also, in effect, health-adjacent information, disclosed automatically, with no way to withhold the signal while still receiving the accommodation."
-        : "These preferences are sent to every page so it can adapt. Most people leave them off, so having one turned on is unusual, and unusual is what makes a person identifiable.",
+        : "Reduced motion, increased contrast and forced colors are the ones a page is told about, and none of yours are set. It cannot see the rest — a screen reader, zoom, larger text and switch control leave no trace here. Most people leave the visible ones off, so having one turned on is unusual, and unusual is what makes a person identifiable.",
       how: "Read by script",
       sectionId: "preferences",
       evidence: [
@@ -531,10 +552,13 @@ export function deriveFindings(sections: Section[]): Finding[] {
       group: "Your browser and settings",
       headline:
         pointer === "coarse"
-          ? "You are on a touchscreen device."
-          : "You are using a mouse or trackpad, not a touchscreen.",
+          ? "Your primary input is a touchscreen."
+          : "Your primary input is a mouse or trackpad.",
+      // The media query reports the primary pointer, not every pointer. A
+      // touchscreen laptop answers "fine", so ruling a touchscreen out was
+      // more than the value supports.
       detail:
-        "How precisely you can point, whether you can hover, and how many fingers the screen accepts say what kind of device you are on even when everything else is hidden.",
+        "How precisely you can point, whether you can hover, and how many fingers the screen accepts say what kind of device you are on even when everything else is hidden. This is the primary pointer only: a laptop with a touchscreen still answers that it has a mouse.",
       how: "Read by script",
       sectionId: "preferences",
       evidence: [
@@ -622,9 +646,13 @@ export function deriveFindings(sections: Section[]): Finding[] {
       group: "What you did on this page",
       headline: has(ref) && !String(ref).startsWith("none")
         ? "This page knows which page sent you here."
-        : "You came here directly, not from a link.",
-      detail:
-        "Browsers tell each site which page you were on immediately before. Follow that across enough sites, which is what embedded trackers do, and the trail becomes a browsing history.",
+        : "No referrer was sent, so this page cannot tell where you came from.",
+      // A missing Referer is not proof of direct navigation: policies strip
+      // it, https-to-http downgrades drop it, and some browsers withhold it
+      // by default. The page was reading silence as an answer.
+      detail: has(ref) && !String(ref).startsWith("none")
+        ? "Browsers tell each site which page you were on immediately before. Follow that across enough sites, which is what embedded trackers do, and the trail becomes a browsing history."
+        : "Browsers normally tell each site which page you were on immediately before, and following that across enough sites turns into a browsing history. Nothing arrived this time. That might mean you typed the address, or that the page you came from asked for the referrer to be withheld — the absence alone cannot tell the two apart.",
       how: "Sent automatically",
       sectionId: "server-derived",
       evidence: [

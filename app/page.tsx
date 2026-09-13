@@ -32,7 +32,15 @@ async function serverSections(): Promise<Section[]> {
   // Behind a hosting proxy the socket belongs to the proxy, not the visitor,
   // and the headers have already been re-emitted. Saying otherwise would
   // overclaim exactly where this page is asking to be trusted.
-  const proxied = Boolean(fwd || h.get("x-forwarded-proto"));
+  // Next synthesises x-forwarded-for even when nothing is in front of it, so
+  // its presence proves nothing: the page claimed to sit behind a proxy when
+  // run directly on a laptop, which also made its own advice — run it with no
+  // proxy and you will see your browser's real header order — impossible to
+  // follow. A genuine proxy forwards an address that is not the one on the
+  // other end of the socket.
+  const socketPeer = (dm("remote-addr") ?? "").replace(/^::ffff:/, "");
+  const forwardedPeer = (fwd?.split(",")[0]?.trim() ?? "").replace(/^::ffff:/, "");
+  const proxied = Boolean(forwardedPeer) && forwardedPeer !== socketPeer;
   const viaProxy = proxied ? "as seen from the hosting proxy, not the browser" : undefined;
 
   const connectionRows: Row[] = [
@@ -66,6 +74,13 @@ async function serverSections(): Promise<Section[]> {
   const derived: Row[] = [
     { k: "client IP (x-forwarded-for)", v: fwd?.split(",")[0]?.trim() ?? "no proxy header", n: viaProxy && "your real address, forwarded by the proxy" },
     { k: "proxy chain", v: fwd ?? "direct connection" },
+    {
+      k: "behind a proxy",
+      v: proxied ? "yes" : "no",
+      n: proxied
+        ? "the socket belongs to the proxy, so header order below is its own"
+        : "the socket is your browser's, so the header order below is yours",
+    },
     { k: "x-real-ip", v: h.get("x-real-ip") ?? undefined },
     { k: "Host requested", v: h.get("host") ?? undefined },
     { k: "User-Agent", v: ua },
