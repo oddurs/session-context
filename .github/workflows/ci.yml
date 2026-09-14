@@ -56,4 +56,8 @@ jobs:
         env:
           CHROME_PATH: /usr/bin/google-chrome
         run: npm run probe -- http://localhost:3939/design 8000
+      - name: And the privacy page
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: npm run probe -- http://localhost:3939/privacy 6000
 

@@ -1,9 +1,33 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { Icon } from "./Icon";
 import { Logo } from "./Logo";
 import { REPO_URL } from "@/lib/site";
 
 /** Masthead and cross-page navigation, shared by both routes. */
+/** A privacy page nobody can find is the same as not having one. */
+export function SiteFooter({ note }: { note?: ReactNode }) {
+  return (
+    <footer className="mt-major border-t border-rule pt-body text-sm text-ink-muted">
+      {note && <p className="mb-snug max-w-text">{note}</p>}
+      <p className="max-w-text">
+        Built by Oddur Sigurdsson. No analytics, no third parties, nothing sold.{" "}
+        <Link href="/privacy" className="text-ink">
+          What this site does with your data
+        </Link>
+        {REPO_URL && (
+          <>
+            {" · "}
+            <a href={REPO_URL} target="_blank" rel="noreferrer" className="text-ink">
+              Source, MIT
+            </a>
+          </>
+        )}
+      </p>
+    </footer>
+  );
+}
+
 export function SiteHeader({
   current,
   title,

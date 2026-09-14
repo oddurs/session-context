@@ -97,6 +97,13 @@ If it needs more capacity, scale the instance up, never out.
 `/design` documents the design system and is deliberately unlinked; it exists to
 be checked against.
 
+## Who made this
+
+Oddur Sigurdsson. It is not a business, has no funding and no commercial
+interest, and sells nothing. What the site stores and what its server keeps for
+a day is written out at [sessioncontext.org/privacy](https://sessioncontext.org/privacy),
+and every claim there is checkable in this repository.
+
 ## License
 
 MIT.

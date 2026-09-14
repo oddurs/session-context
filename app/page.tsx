@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import type { Row, Section } from "@/lib/types";
 import { ClientProbe } from "@/components/ClientProbe";
-import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -195,14 +195,16 @@ export default async function Page() {
       </noscript>
 
       <ClientProbe serverSections={server} probeKey={probeKey} nonce={nonce} />
-      <footer className="mt-major border-t border-rule pt-body text-sm text-ink-muted">
-        <p className="max-w-text">
-          Built with FingerprintJS, ua-parser-js and detectIncognito alongside
-          direct platform probes. Tables under “Unlocked by permission” appear
-          only after you approve a prompt. Values reading “not reported” mean
-          the browser withheld them or has no support.
-        </p>
-      </footer>
+      <SiteFooter
+        note={
+          <>
+            Built with FingerprintJS, ua-parser-js and detectIncognito alongside direct
+            platform probes. Tables under “Unlocked by permission” appear only after you
+            approve a prompt. Values reading “not reported” mean the browser withheld them
+            or has no support.
+          </>
+        }
+      />
     </main>
   );
 }

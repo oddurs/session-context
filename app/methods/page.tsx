@@ -1,5 +1,5 @@
 import { CATALOGUE, DECLINED, METHOD_GROUPS } from "@/lib/methods";
-import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
 import { MethodsBar } from "@/components/MethodsNav";
 import { MethodsSummary } from "@/components/MethodsSummary";
 import { MethodEntry } from "@/components/MethodEntry";
@@ -160,6 +160,7 @@ export default function MethodsPage() {
           </p>
         </div>
       </div>
+      <SiteFooter />
     </main>
   );
 }
