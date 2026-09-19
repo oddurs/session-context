@@ -62,6 +62,13 @@ const CANONICAL_HOST = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://sessioncont
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // The embedding demonstration is framed from the loopback hostname you are
+  // not on, so in development one of the two documents is always served to an
+  // origin of http://127.0.0.1. Next's dev server allows only `localhost` by
+  // default and answers that document's hot-reload websocket with a 403, after
+  // which the frame never hydrates. Development only; it changes nothing in a
+  // built server.
+  allowedDevOrigins: ["127.0.0.1"],
   poweredByHeader: false,
   compress: true,
   productionBrowserSourceMaps: false,

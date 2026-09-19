@@ -1,0 +1,104 @@
+/**
+ * What every browser is asked, so all three are asked the same thing.
+ *
+ * Chrome speaks CDP, Firefox speaks WebDriver BiDi and Safari speaks classic
+ * WebDriver. The protocols have nothing in common, but the questions do — and
+ * the bugs this project has actually shipped were browser-specific, so asking
+ * Firefox and Safari a weaker set than Chrome is how they got through.
+ *
+ * Each driver supplies `evaluate`, which runs an expression in the page and
+ * returns its value. Everything else lives here.
+ */
+
+/** Counts that say the page did its job rather than merely rendering. */
+export const COUNTS = {
+  findings: "document.querySelectorAll('article').length",
+  tables: "document.querySelectorAll('section[id]').length",
+  rows: "document.querySelectorAll('tbody tr').length",
+  unreported: "document.querySelectorAll('tbody tr td span.italic').length",
+};
+
+/**
+ * "[object Object]" is what a structure looks like when something joined or
+ * interpolated it by mistake. It reached production once, in a row a reader on
+ * HN had to point out. Nothing renders it on purpose, so its presence anywhere
+ * is a bug by definition.
+ */
+export const STRINGIFIED = `(() => {
+  const hits = [];
+  document.querySelectorAll('td, dd, p, span').forEach((el) => {
+    if (el.children.length === 0 && el.textContent.includes('[object Object]')) {
+      const row = el.closest('tr');
+      hits.push(row ? row.cells[0].textContent.trim() : el.textContent.trim().slice(0, 40));
+    }
+  });
+  return [...new Set(hits)].slice(0, 8).join(' | ');
+})()`;
+
+/**
+ * A count that came up short says nothing about why. Ask the page what state
+ * it is in: whether React attached, whether collection revealed, which passes
+ * landed, whether it caught an error.
+ */
+export const PAGE_STATE = `JSON.stringify({
+  hydrated: [...document.querySelectorAll('*')].slice(0, 300)
+    .some(el => Object.keys(el).some(k => k.startsWith('__react'))),
+  revealed: !document.querySelector('#plain')?.innerText.includes('None of this asks your permission'),
+  phases: [...document.querySelectorAll('#plain li')].map(li => li.innerText.split('\\n')[0]).slice(0, 6),
+  failure: document.querySelector('#plain')?.innerText.match(/Collection failed[^]{0,160}/)?.[0] ?? null,
+  readyState: document.readyState,
+  scripts: document.querySelectorAll('script').length,
+})`;
+
+/** Only the data page collects; the other routes are prose. */
+export function minimumFor(url) {
+  return new URL(url).pathname === "/"
+    ? { findings: 20, tables: 30, rows: 600 }
+    : { tables: 5, rows: 0, findings: 0 };
+}
+
+/**
+ * Run the battery. Returns the number of problems found, having printed them.
+ * `evaluate` takes an expression string and resolves to its value.
+ */
+export async function runAssertions(
+  url,
+  evaluate,
+  { label = "", problems = 0, watchesConsole = true } = {}
+) {
+  let count = problems;
+
+  const stringified = await evaluate(STRINGIFIED);
+  if (stringified) {
+    count += 1;
+    console.error(`  rendered [object Object] in: ${stringified}`);
+  }
+
+  const counts = {};
+  for (const [key, expression] of Object.entries(COUNTS)) {
+    counts[key] = await evaluate(expression);
+  }
+
+  console.log(`${url}${label ? `  [${label}]` : ""}`);
+  for (const [key, value] of Object.entries(counts)) console.log(`  ${key}: ${value}`);
+  console.log(
+    !watchesConsole
+      ? "  console not observable over this protocol"
+      : count
+        ? `  ${count} console problem(s)`
+        : "  no console errors"
+  );
+
+  let short = false;
+  for (const [key, floor] of Object.entries(minimumFor(url))) {
+    if (Number(counts[key]) < floor) {
+      count += 1;
+      short = true;
+      console.error(`  expected at least ${floor} ${key}, found ${counts[key]}`);
+    }
+  }
+
+  if (short) console.error(`  page state: ${await evaluate(PAGE_STATE)}`);
+
+  return count;
+}

@@ -2,7 +2,7 @@
   "name": "session-context",
   "version": "0.1.0",
   "private": true,
-  "description": "Everything one web page can learn about the browser, device and person that requested it \u2014 stated in plain English, with the raw values behind every claim.",
+  "description": "Everything one web page can learn about the browser, device and person that requested it — stated in plain English, with the raw values behind every claim.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -15,7 +15,9 @@
     "start": "NODE_ENV=production node server.mjs",
     "lint": "eslint",
     "start:next": "next start",
-    "probe": "node scripts/probe.mjs"
+    "probe": "node scripts/probe.mjs",
+    "probe:firefox": "node scripts/probe-firefox.mjs",
+    "probe:safari": "node scripts/probe-safari.mjs"
   },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.2.0",

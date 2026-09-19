@@ -26,11 +26,18 @@ jobs:
   browser:
     # Most of this codebase does nothing under server rendering, and the
     # failures that matter — hydration mismatches, probes that never resolve —
-    # are invisible to a build. This drives a real browser at the built site
+    # are invisible to a build. This drives real browsers at the built site
     # and fails on any console error.
+    #
+    # Two engines, not one. Every browser-specific bug this project has had was
+    # invisible in Chrome: the page rendered its markup in Firefox and then sat
+    # there, never hydrating, for months. Safari is the third engine and cannot
+    # run here, so check it by hand with `npm run probe:safari` before a change
+    # that touches loading, storage or permissions.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: browser-actions/setup-firefox@v1
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -60,4 +67,11 @@ jobs:
         env:
           CHROME_PATH: /usr/bin/google-chrome
         run: npm run probe -- http://localhost:3939/privacy 6000
-
+      - name: And again in Firefox
+        env:
+          FIREFOX_PATH: firefox
+        run: npm run probe:firefox -- http://localhost:3939/ 20000
+      - name: Firefox on the methods page
+        env:
+          FIREFOX_PATH: firefox
+        run: npm run probe:firefox -- http://localhost:3939/methods 8000

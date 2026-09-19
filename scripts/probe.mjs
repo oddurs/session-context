@@ -7,8 +7,12 @@
  * DOM counts so a change can be checked without a human looking at the page.
  *
  *   node scripts/probe.mjs [url] [wait-ms]
+ *
+ * What the page is asked lives in scripts/lib/assertions.mjs, shared with the
+ * Firefox and Safari drivers beside this one.
  */
 import { spawn } from "node:child_process";
+import { runAssertions } from "./lib/assertions.mjs";
 
 const URL_ = process.argv[2] ?? "http://localhost:3939/";
 const WAIT = Number(process.argv[3] ?? 15000);
@@ -33,9 +37,9 @@ chrome.stderr.on("data", async (chunk) => {
   const match = /DevTools listening on (ws:\/\/\S+)/.exec(buffered);
   if (!match || globalThis.__started) return;
   globalThis.__started = true;
-  await run(match[1]);
+  const found = await run(match[1]);
   chrome.kill();
-  process.exit(problems ? 1 : 0);
+  process.exit(found ? 1 : 0);
 });
 
 async function run(wsUrl) {
@@ -86,66 +90,5 @@ async function run(wsUrl) {
     return result.result?.value ?? result.exceptionDetails?.text;
   };
 
-  // "[object Object]" is what a structure looks like when something joined or
-  // interpolated it by mistake. It reached production once, in a row a reader
-  // on HN had to point out. Nothing renders it on purpose, so its presence
-  // anywhere on the page is a bug by definition.
-  const stringified = await evaluate(`(() => {
-    const hits = [];
-    document.querySelectorAll('td, dd, p, span').forEach((el) => {
-      if (el.children.length === 0 && el.textContent.includes('[object Object]')) {
-        const row = el.closest('tr');
-        hits.push(row ? row.cells[0].textContent.trim() : el.textContent.trim().slice(0, 40));
-      }
-    });
-    return [...new Set(hits)].slice(0, 8).join(' | ');
-  })()`);
-  if (stringified) {
-    problems += 1;
-    console.error(`  rendered [object Object] in: ${stringified}`);
-  }
-
-  const counts = {
-    findings: await evaluate("document.querySelectorAll('article').length"),
-    tables: await evaluate("document.querySelectorAll('section[id]').length"),
-    rows: await evaluate("document.querySelectorAll('tbody tr').length"),
-    unreported: await evaluate("document.querySelectorAll('tbody tr td span.italic').length"),
-  };
-
-  console.log(`${URL_}`);
-  for (const [key, value] of Object.entries(counts)) console.log(`  ${key}: ${value}`);
-  console.log(problems ? `  ${problems} console problem(s)` : "  no console errors");
-
-  // A page that renders nothing is a pass by the console's standards and a
-  // failure by any other, so assert that collection actually happened.
-  // Only the data page collects; every other route is prose and is asked
-  // merely to render something.
-  const path = new URL(URL_).pathname;
-  const minimum =
-    path === "/" ? { findings: 20, tables: 30, rows: 600 } : { tables: 5, rows: 0, findings: 0 };
-  let short = false;
-  for (const [key, floor] of Object.entries(minimum)) {
-    if (Number(counts[key]) < floor) {
-      problems += 1;
-      short = true;
-      console.error(`  expected at least ${floor} ${key}, found ${counts[key]}`);
-    }
-  }
-
-  // A count that came up short says nothing about why. Ask the page what state
-  // it is actually in: whether React attached at all, whether collection was
-  // still running, which passes had landed, and whether it recorded an error.
-  // Without this a failure here is a guess, and it was.
-  if (short) {
-    const state = await evaluate(`JSON.stringify({
-      hydrated: [...document.querySelectorAll('*')].slice(0, 300)
-        .some(el => Object.keys(el).some(k => k.startsWith('__react'))),
-      revealed: !document.querySelector('#plain')?.innerText.includes('None of this asks your permission'),
-      phases: [...document.querySelectorAll('#plain li')].map(li => li.innerText.split('\\n')[0]).slice(0, 6),
-      failure: document.querySelector('#plain')?.innerText.match(/Collection failed[^]{0,160}/)?.[0] ?? null,
-      readyState: document.readyState,
-      scripts: document.querySelectorAll('script').length,
-    })`);
-    console.error(`  page state: ${state}`);
-  }
+  return runAssertions(URL_, evaluate, { label: "chrome", problems });
 }

@@ -32,9 +32,13 @@ reason: the page reports connection-level facts the framework cannot see — raw
 header order, HTTP version, socket details — which it injects as `x-dm-*`
 request headers that `app/page.tsx` reads and filters out of the header table.
 
-It binds **both** loopback addresses on the same port. That is deliberate:
-`localhost` and `127.0.0.1` are separate origins to a browser, and the
-third-party embedding demonstration frames whichever hostname you are not on.
+It binds one **dual-stack** socket on `::`, so `localhost` and `127.0.0.1` are
+both reachable. That is deliberate: they are separate origins to a browser, and
+the third-party embedding demonstration frames whichever hostname you are not
+on. Locally the server drops any peer that is not loopback, so `::` does not
+mean the laptop's network. Binding the two addresses as two listeners instead
+is what caused the Firefox dev-server bug described below — don't go back to
+it.
 
 ## Architecture
 
@@ -107,22 +111,34 @@ of them, which a native alert cannot do, and it reads on touch.
 most of this code does nothing under SSR:
 
 ```bash
-npm run probe                      # drives headless Chrome against localhost:3939
-npm run probe -- <url> <wait-ms>   # exits non-zero on any console error
+npm run probe                      # headless Chrome, over DevTools Protocol
+npm run probe:firefox              # headless Firefox, over WebDriver BiDi
+npm run probe:safari               # real Safari, over WebDriver
+npm run probe -- <url> <wait-ms>   # any of the three; non-zero on a problem
 ```
+
+All three ask the page the same questions — `scripts/lib/assertions.mjs` holds
+them, and each driver only supplies the protocol. **Use more than Chrome.**
+Every browser-specific failure this project has had was invisible in Chrome and
+plain in one of the other two, including the one below, which took months.
+Firefox needs nothing installed; Safari needs `safaridriver --enable` once and
+Develop → Allow Remote Automation, and opens a real window.
 
 All three routes are worth driving — `/`, `/methods` and `/design`. CI runs the
 same probe against a built server, and after a push to `main` runs it once more
 against production, waiting for `/api/health` to report the pushed commit so it
 cannot pass against the build it is replacing.
 
-**Firefox and the dev server.** `npm run dev` serves a page that renders and
-then never hydrates in Firefox: no build error, no console error, no uncaught
-exception, and every chunk loads. Production is unaffected, so check anything
-Firefox-related against `npm start`. Ruled out already, each by testing: CSP (a
-wide-open dev policy changes nothing), Turbopack (webpack dev fails the same
-way), script delivery, and errors of every kind over forty seconds. The cause
-is still unknown.
+**Firefox and the dev server**, since it may look like it is coming back: the
+page rendered and then never hydrated in Firefox, with no build error, no
+console error and every chunk loading. The cause was two listeners. Next's dev
+server serves its hot-reload websocket from only one of them and the other
+accepts the upgrade and answers nothing; Firefox resolves `localhost` to
+127.0.0.1 first while Chrome reaches for `::1`, so Chrome got the live socket
+and Firefox got the dead one, and the dev client waits on it before hydrating.
+One dual-stack listener fixed it. `allowedDevOrigins` in `next.config.ts` is
+the other half: Next's dev server 403s the hot-reload socket of any origin but
+`localhost`, which silently broke the embedded frame the same way.
 
 A gated probe must never report a refusal that did not happen. `granted`,
 `denied`, `unsupported` and `error` are four different facts about the reader,

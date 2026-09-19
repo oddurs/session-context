@@ -6,9 +6,9 @@
  * Those are injected as synthetic `x-dm-*` request headers and filtered back
  * out of the displayed header table.
  *
- * It listens on both loopback addresses so `localhost` and `127.0.0.1` are
- * both reachable — the third-party embedding demonstration needs two origins,
- * and uses whichever hostname you did not open as its cross-site frame.
+ * It listens dual-stack so `localhost` and `127.0.0.1` are both reachable —
+ * the third-party embedding demonstration needs two origins, and uses
+ * whichever hostname you did not open as its cross-site frame.
  */
 import { createServer } from "node:http";
 import { createReadStream, existsSync, statSync } from "node:fs";
@@ -20,19 +20,25 @@ const PORT = Number(process.env.PORT) || 3939;
 const dev = process.env.NODE_ENV !== "production";
 
 /**
- * Locally the server binds both loopback addresses, so `localhost` and
- * `127.0.0.1` are both reachable — the third-party embedding demonstration
- * needs two origins and uses whichever hostname you did not open.
+ * One dual-stack listener. `::` accepts IPv4-mapped connections too, so
+ * `localhost` and `127.0.0.1` are both reachable from a single socket — the
+ * third-party embedding demonstration needs two origins and uses whichever
+ * hostname you did not open.
  *
- * A hosted deployment must instead accept connections from outside the
- * container, so it binds every interface. Set HOST to override either.
+ * It used to be two sockets, one per loopback address, and that cost months.
+ * Next's dev server serves its hot-reload websocket from only one listener;
+ * the other accepts the upgrade and then answers nothing at all. Firefox
+ * resolves `localhost` to 127.0.0.1 first and Chrome reaches for ::1, so
+ * Chrome got the live socket and Firefox got the dead one — and because the
+ * dev client waits on that websocket, Firefox rendered the markup and then
+ * never hydrated, with no error in the console to explain it. It read as a
+ * Firefox bug in this app for a long time. It was the second listener.
+ *
+ * A hosted deployment must accept connections from outside its container; a
+ * laptop must not, so non-loopback peers are dropped below. HOST overrides.
  */
 const hosted = Boolean(process.env.HOST || process.env.RAILWAY_ENVIRONMENT);
-const HOSTS = process.env.HOST
-  ? [process.env.HOST]
-  : hosted
-    ? ["::"]
-    : ["127.0.0.1", "::1"];
+const HOSTS = [process.env.HOST ?? "::"];
 
 const app = next({ dev, turbopack: true, hostname: "localhost", port: PORT });
 const handle = app.getRequestHandler();
@@ -117,6 +123,15 @@ function listen(host) {
     // Hot reloading talks over a websocket, which needs the upgrade handler.
     // It is only available once prepare() has resolved.
     server.on("upgrade", (req, socket, head) => app.getUpgradeHandler()(req, socket, head));
+    // `::` reaches every interface, which is what a container wants and the
+    // opposite of what a laptop wants: nothing on this page should be legible
+    // to the rest of the coffee-shop network.
+    if (!hosted) {
+      server.on("connection", (socket) => {
+        const peer = (socket.remoteAddress ?? "").replace(/^::ffff:/, "");
+        if (peer !== "127.0.0.1" && peer !== "::1") socket.destroy();
+      });
+    }
     server.keepAliveTimeout = 65000;
     server.on("error", (err) => {
       if (err.code === "EADDRINUSE") {
@@ -153,7 +168,10 @@ for (const signal of ["SIGTERM", "SIGINT"]) {
 }
 
 app.prepare().then(async () => {
-  const bound = (await Promise.all(HOSTS.map(listen))).filter(Boolean);
+  let bound = (await Promise.all(HOSTS.map(listen))).filter(Boolean);
+  // A machine with IPv6 switched off cannot bind `::` at all. Fall back rather
+  // than refuse to start, but only when the address was this file's choice.
+  if (!bound.length && !process.env.HOST) bound = [await listen("0.0.0.0")].filter(Boolean);
   if (!bound.length) throw new Error(`could not bind to any of: ${HOSTS.join(", ")}`);
 
   const where = hosted
