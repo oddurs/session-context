@@ -25,12 +25,12 @@ jobs:
     name: Verify the live site
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # Needed to tell "behind by two commits" from "a commit I have never
           # heard of".
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
