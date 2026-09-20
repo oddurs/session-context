@@ -69,8 +69,22 @@ export const FINDING_GROUPS = [
   GRANTED_GROUP,
 ];
 
-/** Versions a browser reports to everyone rather than reading from the machine. */
-const FROZEN_OS = /^"?10[._]15[._]7"?$/;
+/**
+ * Versions a browser reports to everyone rather than reading from the machine.
+ * Safari freezes at 10.15.7 and Firefox at a bare 10.15, on every Mac ever
+ * made — an M4 laptop and a 2015 iMac say the same thing. Catalina was a real
+ * 10.15, but a machine actually running it reports the patch level too, and
+ * every browser shipping today reports this string regardless.
+ */
+const FROZEN_OS = /^"?10[._]15(?:[._]\d+)*"?$/;
+
+/**
+ * Firefox answers the graphics question with a class rather than a model —
+ * "Apple M1, or similar" on hardware four generations past an M1. The string
+ * is not a refusal and not a reading either, and printing the chip out of it
+ * had this page naming the wrong processor with total confidence.
+ */
+const BLURRED_GPU = /,\s*or similar\.?$/i;
 
 export function deriveFindings(sections: Section[]): Finding[] {
   const ix = index(sections);
@@ -276,17 +290,26 @@ export function deriveFindings(sections: Section[]): Finding[] {
     // a placeholder was this page asserting something it plainly could not
     // see. A browser that refuses is the more interesting finding anyway.
     const masked = /^(apple gpu|generic renderer|unknown)$/i.test(String(gpu).trim());
+    // "Apple M1, or similar" is neither a refusal nor a reading, and the chip
+    // it names is usually not the one in the machine. The qualifier is the
+    // browser telling you so; dropping it to print "M1" was this page stating
+    // a rounded-off answer as the hardware in front of the reader.
+    const blurred = !masked && BLURRED_GPU.test(String(gpu).trim());
     add({
       id: "f-gpu",
       group: "The machine in front of you",
       headline: masked
         ? "Your browser refuses to name your graphics chip."
-        : chip
-          ? `You are using a Mac with an Apple ${chip.trim()} chip.`
-          : "This page can name the exact graphics chip in your computer.",
+        : blurred
+          ? "Your browser names a class of graphics chip, not yours."
+          : chip
+            ? `You are using a Mac with an Apple ${chip.trim()} chip.`
+            : "This page can name the exact graphics chip in your computer.",
       detail: masked
         ? `Most browsers hand over the graphics driver's full name to any page that asks, naming the chip and driver build — enough to narrow you to a model of computer. This one answers "${String(gpu).trim()}" instead, the same string it gives every other visitor. It is one of the few values here that has been deliberately made useless.`
-        : "The graphics driver gives its full name to any page that asks, with no prompt. It names the chip and driver build, which narrows you to a model of computer and roughly what it cost.",
+        : blurred
+          ? `Most browsers hand over the graphics driver's full name to any page that asks, naming the chip and driver build — enough to narrow you to a model of computer. This one answers "${String(gpu).trim()}", rounding every machine of roughly that kind onto one string. The processor it names need not be the one you are using, and the words "or similar" are the browser saying as much.`
+          : "The graphics driver gives its full name to any page that asks, with no prompt. It names the chip and driver build, which narrows you to a model of computer and roughly what it cost.",
       how: "Read by script",
       sectionId: "graphics",
       evidence: [

@@ -499,8 +499,11 @@ async function graphicsSection(): Promise<Section> {
       { k: `${label} · SHADING_LANGUAGE_VERSION`, v: gl.getParameter(gl.SHADING_LANGUAGE_VERSION) },
       { k: `${label} · VENDOR`, v: gl.getParameter(gl.VENDOR) },
       { k: `${label} · RENDERER`, v: gl.getParameter(gl.RENDERER) },
-      { k: `${label} · UNMASKED_VENDOR`, v: dbg ? gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL) : undefined, n: "real GPU vendor" },
-      { k: `${label} · UNMASKED_RENDERER`, v: dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : undefined, n: "real GPU model" },
+      { k: `${label} · UNMASKED_VENDOR`, v: dbg ? gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL) : undefined, n: "the driver's own vendor string" },
+      // Not every browser answers this honestly — Safari substitutes "Apple
+      // GPU" and Firefox rounds to "…, or similar" — so the note cannot
+      // promise it is the real model.
+      { k: `${label} · UNMASKED_RENDERER`, v: dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : undefined, n: "the driver's own name for the GPU, where the browser passes it through" },
       { k: `${label} · MAX_TEXTURE_SIZE`, v: gl.getParameter(gl.MAX_TEXTURE_SIZE) },
       { k: `${label} · MAX_VIEWPORT_DIMS`, v: Array.from(gl.getParameter(gl.MAX_VIEWPORT_DIMS) ?? []).join(" × ") },
       { k: `${label} · MAX_RENDERBUFFER_SIZE`, v: gl.getParameter(gl.MAX_RENDERBUFFER_SIZE) },
