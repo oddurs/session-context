@@ -71,7 +71,7 @@ function navigatorSection(): Section {
       { k: "cookieEnabled", v: probe(() => nv.cookieEnabled) },
       { k: "doNotTrack", v: probe(() => nv.doNotTrack) },
       { k: "globalPrivacyControl", v: probe(() => nv.globalPrivacyControl) },
-      { k: "hardwareConcurrency", v: probe(() => nv.hardwareConcurrency), n: "logical cores" },
+      { k: "hardwareConcurrency", v: probe(() => nv.hardwareConcurrency), n: "logical cores, capped at eight by WebKit" },
       { k: "deviceMemory", v: probe(() => nv.deviceMemory), n: "GiB, rounded + capped at 8" },
       { k: "maxTouchPoints", v: probe(() => nv.maxTouchPoints) },
       { k: "pdfViewerEnabled", v: probe(() => nv.pdfViewerEnabled) },

@@ -322,13 +322,21 @@ export function deriveFindings(sections: Section[]): Finding[] {
   }
 
   const cores = g("navigator", "hardwareConcurrency");
+  // WebKit answers this with at most eight, whatever the machine holds. On a
+  // ten-core laptop Chrome and Firefox both say ten and Safari says eight, so
+  // "your computer has 8 processor cores" was the page reading out a ceiling
+  // and calling it hardware. Eight from any other engine is a real eight.
+  const cappedCores = Number(cores) === 8 && String(g("ua-parsed", "engine.name")) === "WebKit";
   add(
     {
       id: "f-cpu",
       group: "The machine in front of you",
-      headline: `Your computer has ${cores} processor cores.`,
-      detail:
-        "Core count, memory size and the time taken on a small benchmark separate an expensive workstation from a cheap laptop or an old phone. Advertisers treat that as a proxy for income.",
+      headline: cappedCores
+        ? "Your browser stops counting your processor cores at eight."
+        : `Your computer has ${cores} processor cores.`,
+      detail: cappedCores
+        ? "Core count, memory size and the time taken on a small benchmark separate an expensive workstation from a cheap laptop or an old phone, and advertisers treat that as a proxy for income. This browser reports no more than eight cores to any page, so the number below is a ceiling rather than a count: a machine with eight and a machine with sixteen look the same from here. The benchmark underneath it is not capped, and still tells them apart."
+        : "Core count, memory size and the time taken on a small benchmark separate an expensive workstation from a cheap laptop or an old phone. Advertisers treat that as a proxy for income.",
       how: "Read by script",
       sectionId: "benchmark",
       evidence: [

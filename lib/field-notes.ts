@@ -685,7 +685,8 @@ export const COMPONENT_NOTES: Record<string, string> = {
   colorDepth: "Bits per pixel the display reports.",
   deviceMemory: "Approximate RAM, rounded to a power of two.",
   screenResolution: "Display dimensions, sorted so orientation changes do not alter the value.",
-  hardwareConcurrency: "Logical processor count.",
+  hardwareConcurrency:
+    "Logical processor count, as the browser is willing to state it. WebKit answers with at most eight however many the machine has.",
   timezone: "Your IANA timezone name.",
   sessionStorage: "Whether per-tab storage works, which private modes sometimes restrict.",
   localStorage: "Whether persistent local storage works.",
