@@ -86,6 +86,14 @@ jobs:
           for route in /methods /design /privacy /embed; do
             npm run probe -- "http://localhost:3939$route" 8000 390
           done
+      # The ledger is the one part of this site that asks for anything, and
+      # its four outcomes are where it is most able to say something untrue
+      # about the reader. Every permission is granted first, so any row that
+      # comes back "declined" is reporting a refusal nobody made.
+      - name: The permission ledger, clicked through
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: npm run probe:permissions -- http://localhost:3939/
       - name: And again in Firefox
         env:
           FIREFOX_PATH: firefox

@@ -48,12 +48,27 @@ export const list = (a: unknown) => {
  * mean the capability was never there to grant. Everything else is a fault,
  * and saying so beats blaming the reader for it.
  */
+/**
+ * NotAllowedError covers two facts that are not the same one: you saw a prompt
+ * and refused it, and no prompt was ever shown because the call did not happen
+ * inside a click. Only the message separates them. Reporting the second as a
+ * refusal would have this page inventing an answer the reader never gave.
+ */
+const NO_GESTURE = /user (gesture|activation)|transient activation|requires a gesture|user action/i;
+
 export function classifyDomError(
   e: unknown,
   section: Section,
   missingReason = "This browser or machine does not provide it."
 ): GatedResult {
   const name = (e as DOMException)?.name;
+  if (name === "NotAllowedError" && NO_GESTURE.test((e as Error)?.message ?? ""))
+    return {
+      section,
+      outcome: "error",
+      reason:
+        "No prompt was shown. The browser only offers this one in response to a click or a tap, and the request did not arrive inside one — so nothing here was refused.",
+    };
   if (name === "NotAllowedError" || name === "SecurityError")
     return { section, outcome: "denied" };
   if (name === "NotFoundError" || name === "NotSupportedError" || name === "TypeError")

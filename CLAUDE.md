@@ -114,8 +114,14 @@ most of this code does nothing under SSR:
 npm run probe                      # headless Chrome, over DevTools Protocol
 npm run probe:firefox              # headless Firefox, over WebDriver BiDi
 npm run probe:safari               # real Safari, over WebDriver
-npm run probe -- <url> <wait-ms>   # any of the three; non-zero on a problem
+npm run probe:permissions          # clicks the ledger through, Chrome only
+npm run probe -- <url> <wait-ms> <width?>   # non-zero on any problem
 ```
+
+A width drives the page as a phone. Nothing on this site may scroll sideways
+and the probes assert it, but only at the width you give them — the rule was
+broken on `/design` for as long as that page existed because every run was a
+desktop one.
 
 All three ask the page the same questions — `scripts/lib/assertions.mjs` holds
 them, and each driver only supplies the protocol. **Use more than Chrome.**
@@ -143,7 +149,11 @@ the other half: Next's dev server 403s the hot-reload socket of any origin but
 A gated probe must never report a refusal that did not happen. `granted`,
 `denied`, `unsupported` and `error` are four different facts about the reader,
 and each probe decides between them where its own `try` sits — not by reading
-its output back afterwards. Check the unsupported paths in Firefox and Safari,
+its output back afterwards. `NotAllowedError` is two of those facts wearing one
+name: a prompt you refused, and a prompt that was never shown because the call
+missed its user gesture. `classifyDomError` separates them on the message, and
+`npm run probe:permissions` is what keeps it honest — it grants everything
+first, so any row that answers "declined" is answering for someone. Check the unsupported paths in Firefox and Safari,
 which implement none of `queryLocalFonts`, `getScreenDetails` or `IdleDetector`.
 
 Watch for hydration mismatches specifically. Three have been introduced and

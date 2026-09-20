@@ -17,7 +17,8 @@
     "start:next": "next start",
     "probe": "node scripts/probe.mjs",
     "probe:firefox": "node scripts/probe-firefox.mjs",
-    "probe:safari": "node scripts/probe-safari.mjs"
+    "probe:safari": "node scripts/probe-safari.mjs",
+    "probe:permissions": "node scripts/probe-permissions.mjs"
   },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.2.0",
