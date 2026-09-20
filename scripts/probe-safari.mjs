@@ -77,8 +77,16 @@ try {
   process.exit(found ? 1 : 0);
 } catch (error) {
   console.error(`  driver failed: ${error.message}`);
-  console.error("  Safari needs `safaridriver --enable` once, and Develop →");
-  console.error("  Allow Remote Automation checked.");
+  if (/RWIApplication|timed out while connecting/.test(error.message)) {
+    // Not a setup problem, though it reads like one: safaridriver leaves an
+    // automation host behind after enough sessions and then refuses to start
+    // another. Quitting Safari does not always clear it.
+    console.error("  Safari's automation host is stuck, not misconfigured. Quit Safari,");
+    console.error("  then `pkill -f safaridriver`; a log-out clears it when that does not.");
+  } else {
+    console.error("  Safari needs `safaridriver --enable` once, and Develop →");
+    console.error("  Allow Remote Automation checked.");
+  }
   if (session) await call("DELETE", `/session/${session}`).catch(() => {});
   driver.kill();
   process.exit(1);
