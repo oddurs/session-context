@@ -16,6 +16,10 @@ export const COUNTS = {
   tables: "document.querySelectorAll('section[id]').length",
   rows: "document.querySelectorAll('tbody tr').length",
   unreported: "document.querySelectorAll('tbody tr td span.italic').length",
+  // The one question every route can be asked: is there anything on it? The
+  // structural counts are all zero on a page that has no sections by design,
+  // so without this the smallest route is the one nothing checks.
+  chars: "document.body.innerText.replace(/\\s+/g, ' ').trim().length",
 };
 
 /**
@@ -50,11 +54,25 @@ export const PAGE_STATE = `JSON.stringify({
   scripts: document.querySelectorAll('script').length,
 })`;
 
-/** Only the data page collects; the other routes are prose. */
+/**
+ * What each route has to have to count as working. Only `/` collects; the rest
+ * are prose of very different sizes, and `/embed` is a single line inside a
+ * frame with no sections at all — a blanket floor either passed everything or
+ * failed that one forever. Floors sit well under the real numbers, so an
+ * engine reporting less than Chrome does is not a failure; losing a third of
+ * the page is.
+ */
+const FLOORS = {
+  "/": { findings: 20, tables: 30, rows: 600, chars: 12000 },
+  "/methods": { findings: 20, tables: 5, chars: 12000 },
+  "/design": { tables: 5, chars: 4000 },
+  "/privacy": { tables: 5, chars: 2000 },
+  "/embed": { chars: 40 },
+};
+
 export function minimumFor(url) {
-  return new URL(url).pathname === "/"
-    ? { findings: 20, tables: 30, rows: 600 }
-    : { tables: 5, rows: 0, findings: 0 };
+  // A route nobody listed still has to render something.
+  return FLOORS[new URL(url).pathname] ?? { chars: 200 };
 }
 
 /**

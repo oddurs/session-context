@@ -3,12 +3,15 @@ import { NextResponse, type NextRequest } from "next/server";
 /**
  * Content Security Policy, per request.
  *
+ * Next calls this file a proxy now; it was `middleware.ts` until version 16
+ * deprecated the name. Nothing about what it does changed.
+ *
  * The page needs a few things an ordinary site does not: a blob-backed Web
  * Worker for the cross-check, an inline stylesheet for the CSS-only probes,
  * and an inline JSON-LD block. Rather than opening the policy with
  * 'unsafe-inline', each request carries a nonce that those three use.
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const nonce = crypto.randomUUID().replace(/-/g, "");
 
   // The third-party demonstration frames a second registrable domain, and is

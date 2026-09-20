@@ -67,6 +67,10 @@ jobs:
         env:
           CHROME_PATH: /usr/bin/google-chrome
         run: npm run probe -- http://localhost:3939/privacy 6000
+      - name: And the third-party frame
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: npm run probe -- http://localhost:3939/embed 6000
       - name: And again in Firefox
         env:
           FIREFOX_PATH: firefox
