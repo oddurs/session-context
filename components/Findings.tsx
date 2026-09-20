@@ -61,8 +61,14 @@ export function FindingArticle({
         </span>
         {/* The evidence opens below this line rather than inside it: as part of
             the row it stretched the row's height and left the other items
-            floating against its middle. */}
+            floating against its middle.
+
+            Open, it claims the whole row. Left as an ordinary flex item it was
+            sized by what the line had left over — a third of the column on a
+            wide screen, a hundred and thirty pixels on a phone, where the
+            field names then ran off the side of the page. */}
         <Disclosure
+          className="open:w-full"
           summary={`${count} value${count === 1 ? "" : "s"} behind this`}
           openSummary="hide the values"
         >

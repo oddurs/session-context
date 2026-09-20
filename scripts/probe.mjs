@@ -6,7 +6,10 @@
  * to `next build`. This prints console errors, uncaught exceptions and a few
  * DOM counts so a change can be checked without a human looking at the page.
  *
- *   node scripts/probe.mjs [url] [wait-ms]
+ *   node scripts/probe.mjs [url] [wait-ms] [viewport-width]
+ *
+ * A width drives the page as a phone, which is the only way the "nothing
+ * scrolls sideways" rule gets checked at the width where it can fail.
  *
  * What the page is asked lives in scripts/lib/assertions.mjs, shared with the
  * Firefox and Safari drivers beside this one.
@@ -16,6 +19,7 @@ import { runAssertions } from "./lib/assertions.mjs";
 
 const URL_ = process.argv[2] ?? "http://localhost:3939/";
 const WAIT = Number(process.argv[3] ?? 15000);
+const WIDTH = Number(process.argv[4] ?? 0);
 
 const CHROME =
   process.env.CHROME_PATH ??
@@ -78,6 +82,13 @@ async function run(wsUrl) {
   const { sessionId } = await send("Target.attachToTarget", { targetId, flatten: true });
   await send("Runtime.enable", {}, sessionId);
   await send("Page.enable", {}, sessionId);
+  if (WIDTH) {
+    await send(
+      "Emulation.setDeviceMetricsOverride",
+      { width: WIDTH, height: 844, deviceScaleFactor: 3, mobile: true },
+      sessionId
+    );
+  }
   await send("Page.navigate", { url: URL_ }, sessionId);
   await new Promise((resolve) => setTimeout(resolve, WAIT));
 
@@ -90,5 +101,5 @@ async function run(wsUrl) {
     return result.result?.value ?? result.exceptionDetails?.text;
   };
 
-  return runAssertions(URL_, evaluate, { label: "chrome", problems });
+  return runAssertions(URL_, evaluate, { label: WIDTH ? `chrome ${WIDTH}px` : "chrome", problems });
 }

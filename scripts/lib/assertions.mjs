@@ -40,6 +40,28 @@ export const STRINGIFIED = `(() => {
 })()`;
 
 /**
+ * "Tables never scroll sideways" is a rule this project states about itself,
+ * and until now nothing checked it. One decorative hairline on /design was
+ * drawn eighty characters wide — seven hundred pixels — and took the whole
+ * page sideways on a phone for as long as the page has existed.
+ *
+ * The document's own scroll width is the fact that matters: an element wider
+ * than the window is fine inside something that clips or scrolls it, and a
+ * closed <details> lays its contents out without ever painting them. Only when
+ * the document itself has somewhere to scroll is anything wrong, and then the
+ * visible elements past the edge are worth naming.
+ */
+export const OVERFLOW = `(() => {
+  const room = document.documentElement.clientWidth;
+  if (document.documentElement.scrollWidth <= room + 1) return "";
+  const past = [...document.querySelectorAll('body *')]
+    .filter((el) => el.checkVisibility?.() !== false && el.getBoundingClientRect().right > room + 1)
+    .map((el) => \`\${el.tagName.toLowerCase()}.\${String(el.className).split(' ').slice(0, 2).join('.')}\`);
+  return \`\${document.documentElement.scrollWidth}px wide in a \${room}px window\` +
+    (past.length ? \` — \${[...new Set(past)].slice(0, 5).join(', ')}\` : '');
+})()`;
+
+/**
  * A count that came up short says nothing about why. Ask the page what state
  * it is in: whether React attached, whether collection revealed, which passes
  * landed, whether it caught an error.
@@ -84,12 +106,21 @@ export async function runAssertions(
   evaluate,
   { label = "", problems = 0, watchesConsole = true } = {}
 ) {
+  // Console problems are counted by the driver and reported as their own line;
+  // everything found here adds to the same total but is printed where it was
+  // found, so a failing run says which check failed rather than a number.
   let count = problems;
 
   const stringified = await evaluate(STRINGIFIED);
   if (stringified) {
     count += 1;
     console.error(`  rendered [object Object] in: ${stringified}`);
+  }
+
+  const overflow = await evaluate(OVERFLOW);
+  if (overflow) {
+    count += 1;
+    console.error(`  the page scrolls sideways: ${overflow}`);
   }
 
   const counts = {};
@@ -102,8 +133,8 @@ export async function runAssertions(
   console.log(
     !watchesConsole
       ? "  console not observable over this protocol"
-      : count
-        ? `  ${count} console problem(s)`
+      : problems
+        ? `  ${problems} console problem(s)`
         : "  no console errors"
   );
 

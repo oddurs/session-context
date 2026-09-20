@@ -276,12 +276,18 @@ export default function DesignPage() {
                     <span className="font-mono text-sm tabular text-ink-faint">{m.ch}ch</span>
                   </div>
                   <p className="mt-tight text-sm text-ink-muted">{m.use}</p>
-                  {/* Drawn at its own width, so the list is checkable by eye. */}
-                  <div
-                    aria-hidden
-                    className="mt-tight h-px bg-rule"
-                    style={{ width: `${m.ch}ch` }}
-                  />
+                  {/*
+                    * Drawn at its own width, so the list is checkable by eye —
+                    * and clipped rather than scaled where there is no room for
+                    * it. Eighty characters is seven hundred pixels, which on a
+                    * phone ran past the edge and took the whole page sideways
+                    * with it. A measure wider than the window should look like
+                    * one; shrinking it to fit would draw all four the same
+                    * length and say something false about every one of them.
+                    */}
+                  <div aria-hidden className="mt-tight overflow-hidden">
+                    <div className="h-px bg-rule" style={{ width: `${m.ch}ch` }} />
+                  </div>
                 </div>
               ))}
             </div>

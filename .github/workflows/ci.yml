@@ -71,6 +71,21 @@ jobs:
         env:
           CHROME_PATH: /usr/bin/google-chrome
         run: npm run probe -- http://localhost:3939/embed 6000
+      # The same pages at phone width. "Nothing on this site scrolls sideways"
+      # is a rule the project states about itself, and a decorative hairline on
+      # /design broke it for as long as that page has existed — at a width no
+      # desktop run ever visits.
+      - name: The data page on a phone
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: npm run probe -- http://localhost:3939/ 20000 390
+      - name: The prose pages on a phone
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          for route in /methods /design /privacy /embed; do
+            npm run probe -- "http://localhost:3939$route" 8000 390
+          done
       - name: And again in Firefox
         env:
           FIREFOX_PATH: firefox

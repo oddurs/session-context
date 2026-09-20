@@ -12,7 +12,7 @@
  * with a remote-debugging port prints a WebSocket URL, and the session is
  * negotiated on it.
  *
- *   node scripts/probe-firefox.mjs [url] [wait-ms]
+ *   node scripts/probe-firefox.mjs [url] [wait-ms] [viewport-width]
  */
 import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -22,6 +22,7 @@ import { runAssertions } from "./lib/assertions.mjs";
 
 const URL_ = process.argv[2] ?? "http://localhost:3939/";
 const WAIT = Number(process.argv[3] ?? 15000);
+const WIDTH = Number(process.argv[4] ?? 0);
 
 const FIREFOX =
   process.env.FIREFOX_PATH ?? "/Applications/Firefox.app/Contents/MacOS/firefox";
@@ -118,6 +119,13 @@ async function run(wsUrl) {
   const { contexts } = await send("browsingContext.getTree", {});
   const context = contexts[0].context;
 
+  if (WIDTH) {
+    await send("browsingContext.setViewport", {
+      context,
+      viewport: { width: WIDTH, height: 844 },
+      devicePixelRatio: 3,
+    });
+  }
   await send("browsingContext.navigate", { context, url: URL_, wait: "complete" });
   await new Promise((resolve) => setTimeout(resolve, WAIT));
 
@@ -133,5 +141,5 @@ async function run(wsUrl) {
     return result.result?.value ?? (result.result?.type === "null" ? null : undefined);
   };
 
-  return runAssertions(URL_, evaluate, { label: "firefox", problems });
+  return runAssertions(URL_, evaluate, { label: WIDTH ? `firefox ${WIDTH}px` : "firefox", problems });
 }
